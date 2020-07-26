@@ -1,16 +1,23 @@
-vz = W + WBG;
-vx = U + UBG;
+vz = W;
+vx = U;
 wp = vz(2:end  ,2:end-1);
 wm = vz(1:end-1,2:end-1);
 up = vx(2:end-1,2:end  );
 um = vx(2:end-1,1:end-1);
 
-a   = 1/f0 - f;
-acc = a(2:end-1,2:end-1);
-ajp = a(3:end  ,2:end-1);  ajpp = a([4:end,3      ],2:end-1);
-ajm = a(1:end-2,2:end-1);  ajmm = a([end-2,1:end-3],2:end-1);
-aip = a(2:end-1,3:end  );  aipp = a(2:end-1,[4:end,3      ]);
-aim = a(2:end-1,1:end-2);  aimm = a(2:end-1,[end-2,1:end-3]);
+a  = 1/f0 - f;
+
+agh                    = zeros(N+2,N+2);
+agh(2:end-1,2:end-1)   = a;
+
+agh([1 2 end-1 end],2:end-1) = a([end-2 end-1 2 3],:);
+agh(2:end-1,[1 2 end-1 end]) = a(:,[end-2 end-1 2 3]);
+
+acc = agh(3:end-2,3:end-2);
+ajp = agh(4:end-1,3:end-2);  ajpp = agh(5:end-0,3:end-2);
+ajm = agh(2:end-3,3:end-2);  ajmm = agh(1:end-4,3:end-2);
+aip = agh(3:end-2,4:end-1);  aipp = agh(3:end-2,5:end-0);
+aim = agh(3:end-2,2:end-3);  aimm = agh(3:end-2,1:end-4);
 
 Div_fV(2:end-1,2:end-1)   =     up .*(-(aipp-aip)./h./8 + (aip + acc)./h./2 + (acc-aim )./h./8) ...
                           - abs(up).*(-(aipp-aip)./h./8 + (aip - acc)./h./4 - (acc-aim )./h./8) ...
@@ -21,5 +28,7 @@ Div_fV(2:end-1,2:end-1)   =     up .*(-(aipp-aip)./h./8 + (aip + acc)./h./2 + (a
                           -     wm .*(-(ajp -acc)./h./8 + (acc + ajm)./h./2 + (ajm-ajmm)./h./8) ...
                           + abs(wm).*(-(ajp -acc)./h./8 + (acc - ajm)./h./4 - (ajm-ajmm)./h./8);
 
-% Div_fV(2:end-1,2:end-1) = ((acc+ajp)/2.*wp - (acc+ajm)/2.*wm)/h ...
-%                         + ((acc+aip)/2.*up - (acc+aim)/2.*um)/h;
+Div_fV([1 end],:) = Div_fV([end-1 2],:);
+Div_fV(:,[1 end]) = Div_fV(:,[end-1 2]);
+            
+clear vz vx wp wm up um a acc ajp ajpp ajm ajmm aip aipp aim aimm

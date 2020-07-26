@@ -14,7 +14,6 @@ else
     ferr  = abs(fmass-fmass0)/fmass0;
 end
 
-
 % report iterations
 if     it >=  0  && it <  10
     fprintf(1,'    ---  it =      %d;   abs res = %4.4e;   rel res = %4.4e;   err = %4.4e \n',it,resnorm,resnorm/resnorm0,ferr);

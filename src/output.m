@@ -1,8 +1,24 @@
-close all;
-
+% get frame number and start preparing output
 frame = floor(step/nop);
+fprintf('\n*****  preparing output frame %d for %s \n',frame,runID);
 
-fprintf('\n*****  saving output frame %d to out/%s \n',frame,runID);
+try close(fh1); catch; end
+try close(fh2); catch; end
+try close(fh3); catch; end
+clear fh1 fh2 fh3;
+
+if save_op
+    name = ['../out/',runID,'/',runID,'_cont'];
+    save([name,'.mat']);
+    name = ['../out/',runID,'/',runID,'_',num2str(frame)];
+    save([name,'.mat']);
+    
+    if step == 1
+        logfile = ['../out/',runID,'/',runID,'.log'];
+        if exist(logfile,'file'); delete(logfile); end
+        diary(logfile)
+    end
+end
 
 % prepare for plotting
 TX = {'Interpreter','Latex'}; FS = {'FontSize',18};
@@ -77,8 +93,8 @@ set(fh2, 'CurrentAxes', ax(4))
 imagesc(xc,zc,log10(eta(2:end-1,2:end-1)+etamin)); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ eff. viscosity $\eta$'],TX{:},FS{:});
 set(fh2, 'CurrentAxes', ax(5))
-imagesc(xc,zc,log10(chi(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ elastic par. $\chi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
+imagesc(xc,zc,log10(yield(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ yield str. $\tau_y$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(6))
 imagesc(xc,zc,log10( tII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear stress $\tau_{II}$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
@@ -98,16 +114,16 @@ if plot_cv
     ax(4) = axes(UN{:},'position',[axl+1*axw+1*ahs axb+0*axh+0*avs axw axh]);
 
     set(fh3, 'CurrentAxes', ax(1))
-    imagesc(xc,zc,log10(abs(res_W.*dtW  ./(1e-16+norm(W(:)+WBG(:),2)./N)))); axis ij equal tight; box on; cb = colorbar;
+    imagesc(xc,zc,(res_W.*dtW  ./(1e-16+norm(W(:)+WBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
     set(fh3, 'CurrentAxes', ax(2))
-    imagesc(xc,zc,log10(abs(res_U.*dtU  ./(1e-16+norm(U(:)+UBG(:),2)./N)))); axis ij equal tight; box on; cb = colorbar;
+    imagesc(xc,zc,(res_U.*dtU  ./(1e-16+norm(U(:)+UBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
     set(fh3, 'CurrentAxes', ax(3))
-    imagesc(xc,zc,log10(abs(res_P.*dtP  ./(1e-16+norm(P(:),2)       ./N)))); axis ij equal tight; box on; cb = colorbar;
+    imagesc(xc,zc,(res_P.*dtP  ./(1e-16+norm(P(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. pore pressure $P$'],TX{:},FS{:});
     set(fh3, 'CurrentAxes', ax(4))
-    imagesc(xc,zc,log10(abs(res_f.*dt/10./(1e-16+norm(f(:),2)       ./N)))); axis ij equal tight; box on; cb = colorbar;
+    imagesc(xc,zc,(res_f.*dt/10./(1e-16+norm(f(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
     drawnow;
 end
@@ -118,15 +134,5 @@ if save_op
     name = ['../out/',runID,'/',runID,'_mat_',num2str(frame)];
     print(fh2,name,'-dpng','-r300');
     
-    name = ['../out/',runID,'/',runID,'_cont'];
-    save([name,'.mat'],'U','W','P','u','w','p','f','etay','eta','zeta','chi','K','exx','ezz','exz','txx','tzz','txz','eII','tII','Div_V','Div_v','time','step','fmass0');
-    name = ['../out/',runID,'/',runID,'_',num2str(frame)];
-    save([name,'.mat'],'U','W','P','u','w','p','f','etay','eta','zeta','chi','K','exx','ezz','exz','txx','tzz','txz','eII','tII','Div_V','Div_v','time','step','fmass0');
-    
-    if step == 1
-        logfile = ['../out/',runID,'/',runID,'.log'];
-        if exist(logfile,'file'); delete(logfile); end
-        diary(logfile)
-    end
+    clear ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN
 end
-    
