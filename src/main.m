@@ -2,15 +2,17 @@
 fprintf('\n\n*****  defail  |  %s  |  %s  *****\n\n',runID,datetime);
 
 % get smoothed random noise
-rng(5);
+rng(15);
 a = randn(N,N);
 for i = 1:max(smx,smz)
     a(2:end-1,2:end-1) = a(2:end-1,2:end-1) ...
                        + smz./max(smx,smz).*diff(a(:,2:end-1),2,1)./8 ...
                        + smx./max(smx,smz).*diff(a(2:end-1,:),2,2)./8;
-    a([1 end],:) = a([end-1 2],:);
-    a(:,[1 end]) = a(:,[end-1 2]);
+    a([1 end],:) = (a(round(N/8)+[0 1],:)+a(round(N*7/8)+[0,1],:))/2;
+    a(:,[1 end]) = (a(:,round(N/8)+[0 1])+a(:,round(N*7/8)+[0,1]))/2;
 end
+a([1 end],:) = a([end-1 2],:);
+a(:,[1 end]) = a(:,[end-1 2]);
 a = a./max(abs(a(:)));
 
 % get coordinate arrays
@@ -38,20 +40,21 @@ W      =  0.*WBG;  Wi = W;  res_W = 0.*W;
 P      =  0.*f;  Pi = P;  res_P = 0.*P;  
 u      =  0.*U;
 w      =  0.*W;
-p      =  0.*P;  po = 0.*p;
+p      =  0.*P;  po = p;
 
 % initialise parameter fields
 Div_V  =  0.*P;  Div_v = 0.*P;  Div_fV = 0.*P;  Div_fVBG = 0.*P;
-eIIref =  abs(Pu) + abs(Si) + 1e-16;  
-exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eII = 0.*P;  
-txx    =  0.*P;  tzz = 0.*P;  txz = zeros(N-1,N-1);  tII = 0.*P;  tIIo = tII;
-etay   =  1e3.*ones(size(P));
+eIIref =  abs(Pu) + abs(Si) + 1e-6;  
+exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eII = 0.*P + abs(Pu) + abs(Si);  
+txx    =  0.*exx;  tzz = 0.*ezz;  txz = 0.*exz;  tII = 0.*eII;  tIIo = tII;
+etay   =  ones(size(P));
+zetay  =  ones(size(P))./(f0.*f).^m;
+yieldp =  zeros(size(P));
+yieldt =  Ty.*ones(size(P));
 step   =  0;
 time   =  0;
-dt     =  dt/2;  dto = dt;
+dto    =  dt;
 it     =  0;  
-
-up2date;
 
 % overwrite fields from file if restarting run
 if     restart < 0  % restart from last continuation frame
@@ -60,16 +63,18 @@ if     restart < 0  % restart from last continuation frame
     name = ['../out/',runID,'/',runID,'_cont'];
     load([name,'.mat']);
 elseif restart > 0  % restart from specified continuation frame
-    step = restart;
+    name = ['../out/',runID,'/',runID,'_',num2str(restart)];
+    load([name,'.mat']);
     name = ['../out/',runID,'/',runID,'_par'];
     load(name);
-    name = ['../out/',runID,'/',runID,'_',num2str(step)];
-    load([name,'.mat']);
 end
 
 load ocean;  % load custom colormap
 
 while time < tend && step < M
+    
+    % plot results
+    if ~mod(step,nop); up2date; output; end
     
     % increment time/step
     time = time+dt;
@@ -109,20 +114,32 @@ while time < tend && step < M
         if ~mod(it,nup)
             flxdiv;  flxdivBG;                                             % flux divergence for advection/compaction
             
-            res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ) ...   % residual liquid evolution equation
-                               - (theta.*Div_fVBG + (1-theta).*Div_fVBGo);
-%             res_f([1 end],:) = res_f([end-1 2],:);                         % periodic boundaries
-%             res_f(:,[1 end]) = res_f(:,[end-1 2]);
+            res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ) ...
+                               - (theta.*Div_fVBG + (1-theta).*Div_fVBGo); % residual liquid evolution equation
             
-            res_f = res_f - mean(res_f(:));
-             
+            res_f([1 end],:) = res_f([end-1 2],:);                         % periodic boundaries
+            res_f(:,[1 end]) = res_f(:,[end-1 2]);
+            
+            if demean; res_f = res_f - mean(res_f(:)); end
+
             f = fi - alpha.*res_f.*dt/10 + beta.*(fi-fii);                 % update solution
         end
         
         % update segregation velocities and compaction pressure
-        w   = - (K(1:end-1,:)+K(2:end,:))./2 .* (diff(P,1,1)./h + 1);      % z-segregation velocity
+        w   = - (K(1:end-1,:)+K(2:end,:)).*0.5 .* (diff(P,1,1)./h + 1);    % z-segregation velocity
+        w([1 end],:) = [sum(w([1 end],:),1)./2; ...                        % periodic boundaries
+                        sum(w([1 end],:),1)./2];
+        w(:,[1 end]) = w(:,[end-1 2]);
         
-        u   = - (K(:,1:end-1)+K(:,2:end))./2 .* (diff(P,1,2)./h);          % x-segregation velocity
+        u   = - (K(:,1:end-1)+K(:,2:end)).*0.5 .* (diff(P,1,2)./h);        % x-segregation velocity
+        u([1 end],:) = u([end-1 2],:);                                     % periodic boundaries
+        u(:,[1 end]) = [sum(u(:,[1 end]),2)./2, ...
+                        sum(u(:,[1 end]),2)./2];
+                        
+        p   = max(yieldp,-zeta .* Div_V);                                  % compaction pressure
+
+        p([1 end],:) = p([end-1 2],:);                                     % periodic boundaries
+        p(:,[1 end]) = p(:,[end-1 2]);
         
         % update z-reference velocity
         Div_tz = diff(tzz(:,2:end-1),1,1)./h + diff(txz,1,2)./h;           % get z-stress divergence
@@ -134,7 +151,7 @@ while time < tend && step < M
                             sum(res_W([1 end],:),1)./2];
         res_W(:,[1 end]) = res_W(:,[end-1 2]);
         
-        res_W = res_W - mean(res_W(:));
+        if demean; res_W = res_W - mean(res_W(:)); end
         
         W = Wi - alpha.*res_W.*dtW + beta.*(Wi-Wii);                       % update solution
 
@@ -144,47 +161,46 @@ while time < tend && step < M
         res_U(2:end-1,:) = - Div_tx + diff(P(2:end-1,:),1,2)./h ...
                                     + diff(p(2:end-1,:),1,2)./h;           % residual x-momentum equation
         
-        res_U([1 end],:) = res_U([end-1 2],:);                           % periodic boundaries
+        res_U([1 end],:) = res_U([end-1 2],:);                             % periodic boundaries
         res_U(:,[1 end]) = [sum(res_U(:,[1 end]),2)./2, ...
                             sum(res_U(:,[1 end]),2)./2];
 
-        res_U = res_U - mean(res_U(:));
+        if demean; res_U = res_U - mean(res_U(:)); end
 
         U = Ui - alpha.*res_U.*dtU + beta.*(Ui-Uii);                       % update solution
         
         % update velocity divergences
         Div_V(2:end-1,2:end-1) = diff(U(2:end-1,:),1,2)./h ...             % get velocity divergence
                                + diff(W(:,2:end-1),1,1)./h;
-        Div_V([1 end],:) = Div_V([end-1 2],:);                           % periodic boundaries
+        Div_V([1 end],:) = Div_V([end-1 2],:);                             % periodic boundaries
         Div_V(:,[1 end]) = Div_V(:,[end-1 2]);
+        
         Div_v(2:end-1,2:end-1) = diff(u(2:end-1,:),1,2)./h ...
                                + diff(w(:,2:end-1),1,1)./h;                % segregation velocity divergence
-        Div_v([1 end],:) = Div_v([end-1 2],:);                           % periodic boundaries         
+        Div_v([1 end],:) = Div_v([end-1 2],:);                             % periodic boundaries         
         Div_v(:,[1 end]) = Div_v(:,[end-1 2]);          
         
         % update strain rates
         exx(:,2:end-1)   = diff(U,1,2)./h - Div_V(:,2:end-1)./3 - Pu;      % get x-normal strain rate
-        exx([1 end],:)   = exx([end-1 2],:);                             % periodic boundaries
+        exx([1 end],:)   = exx([end-1 2],:);                               % periodic boundaries
         exx(:,[1 end])   = exx(:,[end-1 2]);               
         ezz(2:end-1,:)   = diff(W,1,1)./h - Div_V(2:end-1,:)./3 + Pu;      % get z-normal strain rate
-        ezz([1 end],:)   = ezz([end-1 2],:);                             % periodic boundaries
+        ezz([1 end],:)   = ezz([end-1 2],:);                               % periodic boundaries
         ezz(:,[1 end])   = ezz(:,[end-1 2]);          
         exz              = 1/2.*(diff(U,1,1)./h + diff(W,1,2)./h) - Si;    % get shear strain rate
         
         % update stresses
-        txx = eta .* exx + chi .* txxo;                                    % x-normal stress
-        tzz = eta .* ezz + chi .* tzzo;                                    % z-normal stress
-        txz = etac.* exz + chic.* txzo;                                    % xz-shear stress  
+        txx = eta .* exx;                                                  % x-normal stress
+        tzz = eta .* ezz;                                                  % z-normal stress
+        txz = etac.* exz;                                                  % xz-shear stress  
         
-        p   = - zeta .* Div_V + xi .* po;                                  % compaction pressure
-
         % update reference pressure
         res_P = Div_V + Div_v;                                             % residual mass equation
 
-        res_P([1 end],:) = res_P([end-1 2],:);                           % periodic boundaries
+        res_P([1 end],:) = res_P([end-1 2],:);                             % periodic boundaries
         res_P(:,[1 end]) = res_P(:,[end-1 2]);
         
-        res_P = res_P - mean(res_P(:));
+        if demean; res_P = res_P - mean(res_P(:)); end
 
         P = Pi - alpha.*res_P.*dtP + beta.*(Pi-Pii);                       % update solution
         
@@ -195,14 +211,10 @@ while time < tend && step < M
 
     end
     
-    clear Wi Wii Ui Uii Pi Pii wi wii ui uii pi pii fi fii fo po Div_Vo dto txxo tzzo txzo Div_tz Div_tx 
+    clear Wi Wii Ui Uii Pi Pii wi wii ui uii pi pii fi fii fo Div_Vo txxo tzzo txzo Div_tz Div_tx 
     
     % print diagnostics
     fprintf(1,'\n         time to solution = %4.4f sec\n\n',toc);
-    
-    fprintf(1,'         min f   = %s%4.4f;   mean f   = %s%4.4f;   max f   = %s%4.4f;\n'  ,int8(min(  f(:))<0),min(  f(:)),int8(mean(  f(:))<0),mean(  f(:)),int8(max(  f(:))<0),max(  f(:)));
-    fprintf(1,'         min K   = %s%4.4f;   mean K   = %s%4.4f;   max K   = %s%4.4f;\n'  ,int8(min(  K(:))<0),min(  K(:)),int8(mean(  K(:))<0),mean(  K(:)),int8(max(  K(:))<0),max(  K(:)));
-    fprintf(1,'         min eta = %s%4.4f;   mean eta = %s%4.4f;   max eta = %s%4.4f;\n\n',int8(min(eta(:))<0),min(eta(:)),int8(mean(eta(:))<0),mean(eta(:)),int8(max(eta(:))<0),max(eta(:)));
 
     fprintf(1,'         min U   = %s%4.4f;   mean U   = %s%4.4f;   max U   = %s%4.4f;\n'  ,int8(min(  U(:))<0),min(  U(:)),int8(mean(  U(:))<0),mean(  U(:)),int8(max(  U(:))<0),max(  U(:)));
     fprintf(1,'         min W   = %s%4.4f;   mean W   = %s%4.4f;   max W   = %s%4.4f;\n'  ,int8(min( -W(:))<0),min( -W(:)),int8(mean( -W(:))<0),mean( -W(:)),int8(max( -W(:))<0),max( -W(:)));
@@ -212,9 +224,16 @@ while time < tend && step < M
     fprintf(1,'         min w   = %s%4.4f;   mean w   = %s%4.4f;   max w   = %s%4.4f;\n'  ,int8(min( -w(:))<0),min( -w(:)),int8(mean( -w(:))<0),mean( -w(:)),int8(max(  f(:))<0),max( -w(:)));
     fprintf(1,'         min p   = %s%4.4f;   mean p   = %s%4.4f;   max p   = %s%4.4f;\n\n',int8(min(  p(:))<0),min(  p(:)),int8(mean(  p(:))<0),mean(  p(:)),int8(max(  f(:))<0),max(  p(:)));
     
-    % plot results
-    if ~mod(step,nop); output; end
+    fprintf(1,'         min f   = %s%4.4f;   mean f   = %s%4.4f;   max f   = %s%4.4f;\n'  ,int8(min(  f(:))<0),min(  f(:)),int8(mean(  f(:))<0),mean(  f(:)),int8(max(  f(:))<0),max(  f(:)));
+    fprintf(1,'         min K   = %s%4.4f;   mean K   = %s%4.4f;   max K   = %s%4.4f;\n\n',int8(min(  K(:))<0),min(  K(:)),int8(mean(  K(:))<0),mean(  K(:)),int8(max(  K(:))<0),max(  K(:)));
     
+    fprintf(1,'         min eta = %s%4.4f;   mean eta = %s%4.4f;   max eta = %s%4.4f;\n'  ,int8(min(eta(:))<0),min(eta(:)),int8(mean(eta(:))<0),mean(eta(:)),int8(max(eta(:))<0),max(eta(:)));
+    fprintf(1,'         min eII = %s%4.4f;   mean eII = %s%4.4f;   max eII = %s%4.4f;\n'  ,int8(min(eII(:))<0),min(eII(:)),int8(mean(eII(:))<0),mean(eII(:)),int8(max(eII(:))<0),max(eII(:)));
+    fprintf(1,'         min tII = %s%4.4f;   mean tII = %s%4.4f;   max tII = %s%4.4f;\n\n',int8(min(tII(:))<0),min(tII(:)),int8(mean(tII(:))<0),mean(tII(:)),int8(max(tII(:))<0),max(tII(:)));
+
 end
+
+% plot results
+output; up2date; 
 
 diary off
