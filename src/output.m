@@ -84,19 +84,19 @@ set(fh2, 'CurrentAxes', ax(1))
 imagesc(xc,zc,         f(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(2))
-imagesc(xc,zc,log10(   K(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ segr. coefficient $K$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
+imagesc(xc,zc,log10(max(1e-3,Div_V(2:end-1,2:end-1)))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['decompaction rate $\dot{\upsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(3))
 imagesc(xc,zc,log10(eII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ strain rate $\varepsilon_{II}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ strain rate $\dot{\varepsilon}_{II}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(4))
-imagesc(xc,zc,log10(eta(2:end-1,2:end-1)+etamin)); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ eff. viscosity $\eta$'],TX{:},FS{:});
+imagesc(xc,zc,log10(eta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear viscosity $\eta$'],TX{:},FS{:});
 set(fh2, 'CurrentAxes', ax(5))
-imagesc(xc,zc,log10(yield(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ yield str. $\tau_y$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
+imagesc(xc,zc,log10(zeta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ comp. viscosity $\zeta$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(6))
-imagesc(xc,zc,log10( tII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,log10(tII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear stress $\tau_{II}$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 drawnow;
 
@@ -126,6 +126,11 @@ if plot_cv
     imagesc(xc,zc,(res_f.*dt/10./(1e-16+norm(f(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
     drawnow;
+    
+    figure(200); clf; 
+    p0 = linspace(-Ty,max(p(:)),1e3);
+    plot(p0,eIIref.*ones(size(p0)),'k',p0,Ty+p0,'r',p(:),tII(:),'k.','LineWidth',2); axis equal tight; box on;
+    title('Failure Criterion');
 end
 
 if save_op
