@@ -1,57 +1,50 @@
 % update tensor magnitudes
 eII(2:end-1,2:end-1) = (  (exx(2:end-1,2:end-1).^2 + ezz(2:end-1,2:end-1).^2 ...
-                     + 2.*(exz(1:end-1,1:end-1).^2.* exz(2:end  ,1:end-1).^2 ...
-                        .* exz(1:end-1,2:end  ).^2.* exz(2:end  ,2:end  ).^2).^0.25)./2).^0.5 + 1e-16;
-eII([1 end],:) = eII([end-1 2],:);                                       % periodic boundaries
+                     + 2.*(exz(1:end-1,1:end-1).^2 + exz(2:end  ,1:end-1).^2 ...
+                         + exz(1:end-1,2:end  ).^2 + exz(2:end  ,2:end  ).^2).*0.25)./2).^0.5 + 1e-16;
+eII([1 end],:) = eII([end-1 2],:);                                         % periodic boundaries
 eII(:,[1 end]) = eII(:,[end-1 2]);
 
-eIIvp = max(1e-6,eII  -(tII-tIIo)./(De*dt + etamin));                      % get visco-plastic strain rate
-DvVvp = max(1e-6,Div_V-(p  -po  )./(De*dt + etamin));                      % get visco-plastic strain rate
-
 tII(2:end-1,2:end-1) = (  (txx(2:end-1,2:end-1).^2 + tzz(2:end-1,2:end-1).^2 ...
-                     + 2.*(txz(1:end-1,1:end-1).^2.* txz(2:end  ,1:end-1).^2 ...
-                        .* txz(1:end-1,2:end  ).^2.* txz(2:end  ,2:end  ).^2).^0.25)./2).^0.5 + 1e-16;
+                     + 2.*(txz(1:end-1,1:end-1).^2 + txz(2:end  ,1:end-1).^2 ...
+                         + txz(1:end-1,2:end  ).^2 + txz(2:end  ,2:end  ).^2).*0.25)./2).^0.5 + 1e-16;
 tII([1 end],:) = tII([end-1 2],:);                                         % periodic boundaries
 tII(:,[1 end]) = tII(:,[end-1 2]);
 
+yieldt = max(    1e-6,  p + Ty );                                          % get Griffith yield stress
+yieldp = max(-Ty+1e-6,-Ty + tII);                                          % get Griffith yield pressure
+
 % update rheological parameters
-etav  = exp(lmd.*f0.*(f-1));                                               % get shear viscosity
+etav   = exp(-lmd.*f0.*(f-1)) ...
+       .* ((eII+abs(Div_V)./3)./eIIref).^((1-nn)./nn);                     % get shear viscosity
 
-yield = max(5e-3,Ty + p);                                                  % get Griffith yield stress
-
-etayi = etay;                                                             
-etay  = min(etav,yield./eIIvp);                                            % get shear visco-plasticity
-
-etay  = log(etay);
-for d = 1:ceil(delta)                                                      % regularise visco-plasticity
-    dd   = delta/ceil(delta);
-    etay(2:end-1,2:end-1) = etay(2:end-1,2:end-1) + dd.*(diff(etay(2:end-1,:),2,2)+diff(etay(:,2:end-1),2,1))./8;
-    etay([1 end],:) = etay([end-1 2],:);
-    etay(:,[1 end]) = etay(:,[end-1 2]);
+etayi  =  etav.*(yieldt./(etav.*eII)).^(1+delta);
+for k  = 1:ceil(kappa)                                                     % regularise visco-plasticity
+    kk = delta/ceil(kappa);
+    etayi(2:end-1,2:end-1) = etayi(2:end-1,2:end-1) + kk.*(diff(etayi(2:end-1,:),2,2)+diff(etayi(:,2:end-1),2,1))./8;
+    etayi([1 end],:) = etayi([end-1 2],:);
+    etayi(:,[1 end]) = etayi(:,[end-1 2]);
 end
-etay  =  exp(etay);
+etay  =  etayi.*(1-gamma) +  etay.*gamma;                                  % iterative relaxation
 
-etay  = etay.*gamma + etayi.*(1-gamma);                                    % iterative relaxation
-etayc = (etay(1:end-1,1:end-1)+etay(2:end,1:end-1) ...                     % evaluate in cell corners
-       + etay(1:end-1,2:end  )+etay(2:end,2:end  ))./4;
+ eta = (etav.^(-1/eps) + etay.^(-1/eps)).^(-eps) + etamin;
+zeta = eta.*max(1e-6,(f0.*f)).^-m;
 
-eta   = (1./(etay  + etamin) + 1./(De*dt + etamin)).^-1;                   % get shear visco-elasto-plasticity
-etac  = (1./(etayc + etamin) + 1./(De*dt + etamin)).^-1;
-chi   = (1 + (De*dt + etamin)./(etay  + etamin)).^-1;                      % get shear visco-elastic evolution parameter
-chic  = (1 + (De*dt + etamin)./(etayc + etamin)).^-1;
+K    = f.^n;                                                               % get segregation coefficient
 
-zeta  = eta./max(1e-6,(f0.*f).^m);                                         % get compaction visco-elasto-plasticity
-xi    = chi;                                                               % get compaction visco-elastic evolution parameter
-
-K     = f.^n;                                                              % get segregation coefficient
-
+etac = (eta(1:end-1,1:end-1)+eta(2:end,1:end-1) ...                        % evaluate in cell corners
+     +  eta(1:end-1,2:end  )+eta(2:end,2:end  )).*0.25;
+   
 % update iterative and physical time step sizes
-dtW = ((eta(1:end-1,:) +  eta(2:end,:))./2./(h/2)^2 ...
-    + (zeta(1:end-1,:) + zeta(2:end,:))./2./(h/2)^2).^-1;                  % iterative step size
-dtU = ((eta(:,1:end-1) +  eta(:,2:end))./2./(h/2)^2 ...
-    + (zeta(:,1:end-1) + zeta(:,2:end))./2./(h/2)^2).^-1;                  % iterative step size
+dtW = ((eta(1:end-1,:)+ eta(2:end,:)).*0.5./(h/2)^2 ...
+    + (zeta(1:end-1,:)+zeta(2:end,:)).*0.5./(h/2)^2).^-1;                  % iterative step size
+dtU = ((eta(:,1:end-1)+ eta(:,2:end)).*0.5./(h/2)^2 ...
+    + (zeta(:,1:end-1)+zeta(:,2:end)).*0.5./(h/2)^2).^-1;                  % iterative step size
 dtP = (1./eta + K./(h/2)^2).^-1;                                           % iterative step size
 Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                                 % combine all velocity components
-dt  = min(2*dto,CFL*min([h/max(abs(Vel))/2,0.01./max(abs(Div_fV(:)))]));   % physical time step
+if step > 1
+    dt  = min(2*dto,CFL*min([h/2/max(abs(Vel)), ...
+              0.05./max(abs(Div_fV(:)))]));                                % physical time step
+end
 
-clear etayi eIIvp etav Vel d dd
+clear etayi eIIvp Vel d dd
