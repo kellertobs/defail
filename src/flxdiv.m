@@ -7,8 +7,8 @@ um = vx(2:end-1,1:end-1);
 
 a  = 1/f0 - f;
 
-agh                    = zeros(N+2,N+2);
-agh(2:end-1,2:end-1)   = a;
+agh                          = zeros(N+2,N+2);
+agh(2:end-1,2:end-1)         = a;
 
 agh([1 2 end-1 end],2:end-1) = a([end-2 end-1 2 3],:);
 agh(2:end-1,[1 2 end-1 end]) = a(:,[end-2 end-1 2 3]);
@@ -27,8 +27,5 @@ Div_fV(2:end-1,2:end-1)   =     up .*(-(aipp-aip)./h./8 + (aip + acc)./h./2 + (a
                           - abs(wp).*(-(ajpp-ajp)./h./8 + (ajp - acc)./h./4 - (acc-ajm )./h./8) ...
                           -     wm .*(-(ajp -acc)./h./8 + (acc + ajm)./h./2 + (ajm-ajmm)./h./8) ...
                           + abs(wm).*(-(ajp -acc)./h./8 + (acc - ajm)./h./4 - (ajm-ajmm)./h./8);
-
-Div_fV([1 end],:) = Div_fV([end-1 2],:);
-Div_fV(:,[1 end]) = Div_fV(:,[end-1 2]);
             
 clear vz vx wp wm up um a acc ajp ajpp ajm ajmm aip aipp aim aimm
