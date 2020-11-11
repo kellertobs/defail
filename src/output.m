@@ -84,7 +84,7 @@ set(fh2, 'CurrentAxes', ax(1))
 imagesc(xc,zc,         f(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(2))
-imagesc(xc,zc,log10(max(1e-3,Div_V(2:end-1,2:end-1)))); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,log10(max(1e-3.*max(abs(Div_V(:))),Div_V(2:end-1,2:end-1)))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['decompaction rate $\dot{\upsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(3))
 imagesc(xc,zc,log10(eII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
@@ -129,7 +129,7 @@ if plot_cv
     
     figure(200); clf; 
     p0 = linspace(-Ty,max(p(:)),1e3);
-    plot(p0,eIIref.*ones(size(p0)),'k',p0,Ty+p0,'r',p(:),tII(:),'k.','LineWidth',2); axis equal tight; box on;
+    plot(p0,eIIref.*ones(size(p0)),'k',p0,Ty+p0,'r',yieldp(:),yieldt(:),'r.',p(:),tII(:),'k.','LineWidth',2); axis equal tight; box on;
     title('Failure Criterion');
 end
 
