@@ -1,10 +1,10 @@
 clear all; close all;                %#ok<*NASGU>
 
 % set parameter space to be tested
-NN  =  400;
-SI  =  [0, 0, 0, 0, 0, 0];
-PU  = -[1/16, 1/4, 1  , 1, 4, 16];
-TY  =  [1/4,  1/4, 1/4, 1, 1, 4 ];
+NN  =  200;
+SI  =  [0, 0, 0, 0, 0, 0, 0];
+PU  = -[1/64, 1/16, 1/4, 1 , 4, 16, 64];
+TY  =  [1/16,  1/4, 1/4, 1,  4, 4, 16];
 
 for i=1:length(TY)
     
@@ -19,7 +19,7 @@ for i=1:length(TY)
     demean   =  1;                   % remove mean from solution fields
     
     % set model domain parameters
-    L        =  80;                  % domain dimension
+    L        =  40;                  % domain dimension
     N        =  NN + 2;              % number of grid points in z-direction (incl. 2 ghosts)
     h        =  L/(N-2);             % grid spacing
     
@@ -29,11 +29,11 @@ for i=1:length(TY)
     dt       =  1e-6;                % initial time step [s]
     
     % set model liquid fraction parameters
-    f0       =  0.01;                % background liquid fraction
-    f1       =  0.50;                % amplitude of random noise
+    f0       =  0.02;                % background liquid fraction
+    f1       =  0.20;                % amplitude of random noise
     f2       =  0.00;                % amplitude of gaussian
-    smx      =  2/h^2;               % smoothness of initial random noise in x-direction
-    smz      =  2/h^2;               % smoothness of initial random noise in z-direction
+    smx      =  1/h^2;               % smoothness of initial random noise in x-direction
+    smz      =  1/h^2;               % smoothness of initial random noise in z-direction
     wx       =  L/5;                 % horizontal half-width of gaussian
     wz       =  L/5;                 % vertical half-width of initial gaussian
     xpos     =  0;                   % x-position of initial gaussian (0 = middle of domain)
@@ -49,6 +49,7 @@ for i=1:length(TY)
     % stress control parameters
     Pu       =  PU(i);               % ratio of pure-shear stress to buoyancy pressure
     Si       =  SI(i);               % ratio of simple-shear stress to buoyancy pressure
+    B        =  1;
     
     % set numerical model parameters
     nup      =  50;                  % nonlinear coefficients, residual norms updated every 'nup' iterations
@@ -61,9 +62,9 @@ for i=1:length(TY)
     alpha    =  0.95;                % inner its step size (multiple of stable step) [0,1]
     beta     =  alpha-15/N;          % iterative damping parameter [0,1]
     gamma    =  0.50;                % rheology lag parameter [0,1]
-    delta    =  0.10;                % plastic strain-rate localisaton sharpening powerlaw (> 0)
-    eps      =  0.50;                % softening plastic stress cut-off (1 = harmonic sum, 0 = min() cut-off)
-    kappa    =  0.25;                % regularisation of eIIvp for failure [0,1]
+    delta    =  0.75;                % plastic strain-rate localisaton sharpening powerlaw (> 0)
+    eps      =  0.05;                % softening plastic stress cut-off (1 = harmonic sum, 0 = min() cut-off)
+    kappa    =  0.50;                % regularisation of eIIvp for failure [0,1]
     etamin   =  1e-2;                % minimum viscosity for regularisation
     
     % create output directory
