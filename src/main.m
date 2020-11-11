@@ -126,7 +126,7 @@ while time < tend && step < M
         end
         
         % update segregation velocities and compaction pressure
-        w   = - (K(1:end-1,:)+K(2:end,:)).*0.5 .* (diff(P,1,1)./h + 1);    % z-segregation velocity
+        w   = - (K(1:end-1,:)+K(2:end,:)).*0.5 .* (diff(P,1,1)./h + B);    % z-segregation velocity
         w([1 end],:) = [sum(w([1 end],:),1)./2; ...                        % periodic boundaries
                         sum(w([1 end],:),1)./2];
         w(:,[1 end]) = w(:,[end-1 2]);
@@ -136,7 +136,8 @@ while time < tend && step < M
         u(:,[1 end]) = [sum(u(:,[1 end]),2)./2, ...
                         sum(u(:,[1 end]),2)./2];
                         
-        p   = max(yieldp,-zeta .* Div_V);                                  % compaction pressure
+        p   = max(ypcut,-zeta .* Div_V);                                  % compaction pressure
+%         p   = -zeta .* Div_V;                                  % compaction pressure
 
         p([1 end],:) = p([end-1 2],:);                                     % periodic boundaries
         p(:,[1 end]) = p(:,[end-1 2]);
