@@ -28,4 +28,4 @@ Div_fVBG(2:end-1,2:end-1)   =     up .*(-(aipp-aip)./h./8 + (aip + acc)./h./2 + 
                             -     wm .*(-(ajp -acc)./h./8 + (acc + ajm)./h./2 + (ajm-ajmm)./h./8) ...
                             + abs(wm).*(-(ajp -acc)./h./8 + (acc - ajm)./h./4 - (ajm-ajmm)./h./8);
 
-clear vz vx wp wm up um a acc ajp ajpp ajm ajmm aip aipp aim aimm
+clear vz vx wp wm up um a agh acc ajp ajpp ajm ajmm aip aipp aim aimm
