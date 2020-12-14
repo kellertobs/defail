@@ -13,7 +13,7 @@ if save_op
     name = ['../out/',runID,'/',runID,'_',num2str(frame)];
     save([name,'.mat']);
     
-    if step == 1
+    if step == 0
         logfile = ['../out/',runID,'/',runID,'.log'];
         if exist(logfile,'file'); delete(logfile); end
         diary(logfile)
@@ -84,11 +84,11 @@ set(fh2, 'CurrentAxes', ax(1))
 imagesc(xc,zc,         f(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(2))
-imagesc(xc,zc,log10(max(1e-3.*max(abs(Div_V(:))),Div_V(2:end-1,2:end-1)))); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,     ups(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['decompaction rate $\dot{\upsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(3))
-imagesc(xc,zc,log10(eII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ strain rate $\dot{\varepsilon}_{II}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
+imagesc(xc,zc,log10(eps(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ strain rate $\dot{\varepsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(4))
 imagesc(xc,zc,log10(eta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear viscosity $\eta$'],TX{:},FS{:});
@@ -96,8 +96,8 @@ set(fh2, 'CurrentAxes', ax(5))
 imagesc(xc,zc,log10(zeta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ comp. viscosity $\zeta$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(6))
-imagesc(xc,zc,log10(tII(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
-set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear stress $\tau_{II}$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
+imagesc(xc,zc,log10(tau(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear stress $\tau$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 drawnow;
 
 % prepare and plot figure for solution residuals
@@ -127,17 +127,20 @@ if plot_cv
     set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
     drawnow;
     
+    % plot stress state and failure criterion
     figure(200); clf; 
     p0 = linspace(-Ty,max(p(:)),1e3);
-    plot(p0,eIIref.*ones(size(p0)),'k',p0,Ty+p0,'r',yieldp(:),yieldt(:),'r.',p(:),tII(:),'k.','LineWidth',2); axis equal tight; box on;
+    plot(p0,eps0.*ones(size(p0)),'k',p0,Ty+p0,'r',yieldp(:),yieldt(:),'r.',p(:),tau(:),'k.','LineWidth',2); axis equal tight; box on;
     title('Failure Criterion');
+    drawnow;
 end
 
+% save output frame
 if save_op
+    clear ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN p0 UBG WBG
+
     name = ['../out/',runID,'/',runID,'_sol_',num2str(frame)];
     print(fh1,name,'-dpng','-r300');
     name = ['../out/',runID,'/',runID,'_mat_',num2str(frame)];
     print(fh2,name,'-dpng','-r300');
-    
-    clear ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN
 end
