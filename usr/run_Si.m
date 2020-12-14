@@ -1,10 +1,10 @@
-clear all; close all;                %#ok<*NASGU>
+clear; close all;                %#ok<*NASGU>
 
 % set parameter space to be tested
-NN  =  200;
-PU  =  [0, 0, 0, 0, 0, 0, 0];
-SI  =  [1/64, 1/16, 1/4, 1 , 4, 16, 64];
-TY  =  [1/16,  1/4, 1/4, 1,  4, 4, 16];
+NN  =  500;
+PU  =  [0,0,0,0,0];
+SI  =  [1/100, 1/10, 1, 10, 100];
+TY  =  [1/10 , 1/10, 1, 10, 10 ];
 
 for i=1:length(TY)
     
@@ -19,21 +19,20 @@ for i=1:length(TY)
     demean   =  1;                   % remove mean from solution fields
     
     % set model domain parameters
-    L        =  40;                  % domain dimension
+    L        =  100;                 % domain dimension
     N        =  NN + 2;              % number of grid points in z-direction (incl. 2 ghosts)
     h        =  L/(N-2);             % grid spacing
     
     % set model timing parameters
     M        =  1e3;                 % number of time steps to take
-    tend     =  1e3;                 % end time for simulation [s]
-    dt       =  1e-6;                % initial time step [s]
+    tend     =  100;                 % end time for simulation [s]
     
     % set model liquid fraction parameters
-    f0       =  0.02;                % background liquid fraction
-    f1       =  0.20;                % amplitude of random noise
+    f0       =  0.01;                % background liquid fraction
+    f1       =  0.25;                % amplitude of random noise
     f2       =  0.00;                % amplitude of gaussian
-    smx      =  1/h^2;               % smoothness of initial random noise in x-direction
-    smz      =  1/h^2;               % smoothness of initial random noise in z-direction
+    smx      =  L/20/h^2;            % smoothness of initial random noise in x-direction
+    smz      =  L/20/h^2;            % smoothness of initial random noise in z-direction
     wx       =  L/5;                 % horizontal half-width of gaussian
     wz       =  L/5;                 % vertical half-width of initial gaussian
     xpos     =  0;                   % x-position of initial gaussian (0 = middle of domain)
@@ -44,28 +43,27 @@ for i=1:length(TY)
     m        =  1;                   % compaction viscosity powerlaw
     nn       =  3;                   % non-Newtonian shear viscosity powerlaw
     lmd      =  30;                  % shear viscosity liquid-weakening parameter
-    Ty       =  TY(i);               % Griffith criterion tensile strength
     
     % stress control parameters
+    Ty       =  TY(i);               % Griffith criterion tensile strength
     Pu       =  PU(i);               % ratio of pure-shear stress to buoyancy pressure
     Si       =  SI(i);               % ratio of simple-shear stress to buoyancy pressure
-    B        =  1;
+    B        =  1;                   % relative magnitude of buoyancy force
 
     % set numerical model parameters
-    nup      =  50;                  % nonlinear coefficients, residual norms updated every 'nup' iterations
-    CFL      =  0.5;                 % (physical) time stepping courant number (multiplies stable step) [0,1]
+    nup      =  20;                  % nonlinear coefficients, residual norms updated every 'nup' iterations
+    CFL      =  0.50;                % (physical) time stepping courant number (multiplies stable step) [0,1]
     ADVN     =  'FRM';               % advection scheme ('UPW2', 'UPW3', or 'FRM')
     theta    =  0.50;                % time-stepping scheme selector (1=BE, 1/2=CN, 0=FE)
-    rtol     =  1e-4;                % outer its relative tolerance
+    rtol     =  1e-6;                % outer its relative tolerance
     atol     =  1e-6;                % outer its absolute tolerance
-    maxit    =  5e3;                 % maximum outer its
-    alpha    =  0.95;                % inner its step size (multiple of stable step) [0,1]
-    beta     =  alpha-15/N;          % iterative damping parameter [0,1]
-    gamma    =  0.50;                % rheology lag parameter [0,1]
-    delta    =  0.75;                % plastic strain-rate localisaton sharpening powerlaw (> 0)
-    eps      =  0.05;                % softening plastic stress cut-off (1 = harmonic sum, 0 = min() cut-off)
-    kappa    =  0.50;                % regularisation of eIIvp for failure [0,1]
-    etamin   =  1e-2;                % minimum viscosity for regularisation
+    minit    =  500;                 % maximum outer its
+    maxit    =  3000;                % maximum outer its
+    alpha    =  0.90;                % inner its step size (fraction of stable step) [0,1]
+    beta     =  0.80;                % iterative damping parameter (fraction of previous step) [0,1]
+    gamma    =  0.25;                % iterative relaxation for rheology updates [0,1]
+    kappa    =  0.25;                % regularisation of eIIvp for failure [0,1]
+    etamin   =  0.01;                % minimum viscosity for regularisation
     
     % create output directory
     if ~isfolder(['../out/',runID])
