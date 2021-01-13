@@ -11,6 +11,7 @@ for i = 1:max(smx,smz)
     a([1 end],:) = a([end-1 2],:);
     a(:,[1 end]) = a(:,[end-1 2]);
 end
+a = a - mean(a(:)); 
 a = a./max(abs(a(:)));
 
 % get coordinate arrays
@@ -29,15 +30,13 @@ else
 end
 f      =  f + a.*f1;  fo = f;  fi = f;  res_f = 0.*f;  fmass0 = f0.*sum(f(:));
 WP     =  (Z(1:end-1,:)+Z(2:end,:))/2/L*Pu*L;
-WS     = -(X(1:end-1,:)+X(2:end,:))/2/L*Si*L;  WBG0 = WP+WS+csw;
+WS     = -(X(1:end-1,:)+X(2:end,:))/2/L*Si*L;  WBG = WP+WS+csw;
 UP     = -(X(:,1:end-1)+X(:,2:end))/2/L*Pu*L;
-US     = -(Z(:,1:end-1)+Z(:,2:end))/2/L*Si*L;  UBG0 = UP+US;     
+US     = -(Z(:,1:end-1)+Z(:,2:end))/2/L*Si*L;  UBG = UP+US;     
 clear  WP WS UP US
-rmp    =  min(1,1/10);
-WBG = rmp.*WBG0;  UBG = rmp.*UBG0;  
-W      =  0.*WBG0;  Wi = W;  res_W = 0.*W;
-U      =  0.*UBG0;  Ui = U;  res_U = 0.*U;
-P      =  0.*f;  Pi = P;  res_P = 0.*P;  
+W      =  0.*WBG;  Wi = W;  res_W = 0.*W;
+U      =  0.*UBG;  Ui = U;  res_U = 0.*U;
+P      =  0.*f;    Pi = P;  res_P = 0.*P;  
 u      =  0.*U;
 w      =  0.*W;
 p      =  0.*P;
@@ -45,10 +44,10 @@ p      =  0.*P;
 % initialise parameter fields
 ups    =  0.*P;  upss = 0.*P;  Div_fV = 0.*P;  Div_fVBG = 0.*P;
 eps0   =  abs(Pu) + abs(Si) + 1e-6;  
-exx    =  0.*P - Pu.*rmp;  ezz = 0.*P + Pu.*rmp;  exz = zeros(N-1,N-1) - Si.*rmp;  eps = 0.*P + (abs(Pu) + abs(Si)).*rmp;  
+exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eps = 0.*P + (abs(Pu) + abs(Si));  
 txx    =  0.*exx;  tzz = 0.*ezz;  txz = 0.*exz;  tau = 0.*eps;
-eta    =  ones(size(P));
-zeta   =  ones(size(P))./(f0.*f).^m;
+eta    =  log10( exp(-lmd.*f0.*(f-1)) );
+zeta   =  eta - max(-6,log10(f0.*f)).*m;
 yieldp =  zeros(size(P));
 yieldt =  Ty.*ones(size(P));
 
@@ -60,13 +59,17 @@ dto    =  dt;
 
 % overwrite fields from file if restarting run
 if     restart < 0  % restart from last continuation frame
-    name = ['../out/',runID,'/',runID,'_par'];
-    load(name);
-    name = ['../out/',runID,'/',runID,'_cont'];
-    load([name,'.mat']);
+    if isfile(['../out/',runID,'/',runID,'_cont.mat'])
+        name = ['../out/',runID,'/',runID,'_par'];
+        load(name);
+        name = ['../out/',runID,'/',runID,'_cont.mat'];
+        load(name);
+    else
+        restart = 0;
+    end
 elseif restart > 0  % restart from specified continuation frame
-    name = ['../out/',runID,'/',runID,'_',num2str(restart)];
-    load([name,'.mat']);
+    name = ['../out/',runID,'/',runID,'_',num2str(restart),'.mat'];
+    load(name);
     name = ['../out/',runID,'/',runID,'_par'];
     load(name);
 end
@@ -88,11 +91,7 @@ while time < tend && step < M
     
     % store previous solution
     fo      = f;
-    Div_fVo = Div_fV;  Div_fVBGo = Div_fVBG;
-    
-    % update factor for ramp-up at beginning of run
-    rmp = min(1,step/10);
-    WBG = rmp.*WBG0;  UBG = rmp.*UBG0;  
+    Div_fVo = Div_fV;  Div_fVBGo = Div_fVBG; 
         
     % reset residual norms and iteration count
     resnorm  = 1e3;
@@ -110,13 +109,14 @@ while time < tend && step < M
         Wii = Wi;  Wi = W;
         Uii = Ui;  Ui = U;
         Pii = Pi;  Pi = P;
-        fii = fi;  fi = f;
                 
         % update fields
         if ~mod(it,nup); up2date; end
 
         % update liquid fraction
         if ~mod(it,nup)
+            fii = fi;  fi = f;
+
             flxdiv;  flxdivBG;                                             % flux divergence for advection/compaction
             
             res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ) ...
@@ -141,7 +141,7 @@ while time < tend && step < M
         u(:,[1 end]) = [sum(u(:,[1 end]),2)./2, ...
                         sum(u(:,[1 end]),2)./2];
                         
-        p   = -zeta .* ups;                                                % compaction pressure
+        p   = -10.^zeta .* ups;                                            % compaction pressure
 
         p([1 end],:) = p([end-1 2],:);                                     % periodic boundaries
         p(:,[1 end]) = p(:,[end-1 2]);

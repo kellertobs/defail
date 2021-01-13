@@ -4,7 +4,7 @@ resnorm = norm(res_U(:).*dtU(:),2)./(1e-16+norm(U(:)+UBG(:),2)) ...
         + norm(res_P(:).*dtP(:),2)./(1e-16+norm(P(:),2)) ...
         + norm(res_f(:).*dt/10 ,2)./(1e-16+norm(f(:),2));
 
-if it<=nup || resnorm>resnorm0; resnorm0 = resnorm; end  % reset reference residual
+if it<=nup || resnorm>resnorm0; resnorm0 = resnorm + 1e-32; end  % reset reference residual
 
 % get total mass error
 if bnchmrk
