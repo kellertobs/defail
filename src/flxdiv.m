@@ -7,11 +7,11 @@ um = vx(2:end-1,1:end-1);
 
 a  = 1/f0 - f;
 
-agh                          = zeros(N+2,N+2);
-agh(2:end-1,2:end-1)         = a;
+agh                    = zeros(N+2,N+2);
+agh(2:end-1,2:end-1)   = a;
 
-agh([1 2 end-1 end],2:end-1) = a([end-2 end-1 2 3],:);
-agh(2:end-1,[1 2 end-1 end]) = a(:,[end-2 end-1 2 3]);
+agh([1 2 end-1 end],:) = agh([end-3 end-2 3 4],:);
+agh(:,[1 2 end-1 end]) = agh(:,[end-3 end-2 3 4]);
 
 acc = agh(3:end-2,3:end-2);
 ajp = agh(4:end-1,3:end-2);  ajpp = agh(5:end-0,3:end-2);

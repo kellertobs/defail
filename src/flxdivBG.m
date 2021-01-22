@@ -7,11 +7,17 @@ um = vx(2:end-1,1:end-1);
 
 a  = 1/f0 - f;
 
-agh                          = zeros(N+2,N+2);
-agh(2:end-1,2:end-1)         = a;
+agh                    = zeros(N+2,N+2);
+agh(2:end-1,2:end-1)   = a;
 
-agh([1 2 end-1 end],2:end-1) = (a(round(N/8)+[-1 0 1 2],:)+a(round(N*7/8)+[-1 0 1 2],:))/2;
-agh(2:end-1,[1 2 end-1 end]) = (a(:,round(N/8)+[-1 0 1 2])+a(:,round(N*7/8)+[-1 0 1 2]))/2;
+Xbnd = round(X(:,end-1)./h);  Xbnd(Xbnd<2) = Xbnd(Xbnd<2)+(N-3);  Xbnd(Xbnd>N-2) = Xbnd(Xbnd>N-2)-(N-3);
+Zbnd = round(Z(end-1,:)./h);  Zbnd(Zbnd<2) = Zbnd(Zbnd<2)+(N-3);  Zbnd(Zbnd>N-2) = Zbnd(Zbnd>N-2)-(N-3);
+
+idx = sub2ind(size(dr), repmat((1:N).',1,4), Xbnd+[-1 0 1 2]);
+agh(2:end-1,[1 2 end-1 end]) = 1/f0 - 1 - f1.*dr(idx);
+
+idx = sub2ind(size(dr), Zbnd+[-1 0 1 2].',repmat((1:N),4,1));
+agh([1 2 end-1 end],2:end-1) = 1/f0 - 1 - f1.*dr(idx);
 
 acc = agh(3:end-2,3:end-2);
 ajp = agh(4:end-1,3:end-2);  ajpp = agh(5:end-0,3:end-2);

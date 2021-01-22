@@ -3,16 +3,16 @@ fprintf('\n\n*****  defail  |  %s  |  %s  *****\n\n',runID,datetime);
 
 % produce smooth random perturbations
 rng(15);
-a = randn(N,N);
+dr = randn(N,N);
 for i = 1:max(smx,smz)
-    a(2:end-1,2:end-1) = a(2:end-1,2:end-1) ...
-                       + smz./max(smx,smz).*diff(a(:,2:end-1),2,1)./8 ...
-                       + smx./max(smx,smz).*diff(a(2:end-1,:),2,2)./8;
-    a([1 end],:) = a([end-1 2],:);
-    a(:,[1 end]) = a(:,[end-1 2]);
+    dr(2:end-1,2:end-1) = dr(2:end-1,2:end-1) ...
+                       + smz./max(smx,smz).*diff(dr(:,2:end-1),2,1)./8 ...
+                       + smx./max(smx,smz).*diff(dr(2:end-1,:),2,2)./8;
+    dr([1 end],:) = dr([N/2-1 N/2],:);
+    dr(:,[1 end]) = dr(:,[N/2-1 N/2]);
 end
-a = a - mean(a(:)); 
-a = a./max(abs(a(:)));
+dr = dr - mean(dr(:)); 
+dr = dr./max(abs(dr(:)));
 
 % get coordinate arrays
 x     = -L/2-h/2:h:L/2+h/2;
@@ -28,7 +28,7 @@ if bnchmrk
 else
     f  =  1 + f2.*exp(-(X+xpos).^2./wx^2).*exp(-(Z+zpos).^2./wz^2);
 end
-f      =  f + a.*f1;  fo = f;  fi = f;  res_f = 0.*f;  fmass0 = f0.*sum(f(:));
+f      =  f + dr.*f1;  fo = f;  res_f = 0.*f;  fmass0 = f0.*sum(f(:));
 WP     =  (Z(1:end-1,:)+Z(2:end,:))/2/L*Pu*L;
 WS     = -(X(1:end-1,:)+X(2:end,:))/2/L*Si*L;  WBG = WP+WS+csw;
 UP     = -(X(:,1:end-1)+X(:,2:end))/2/L*Pu*L;
@@ -92,7 +92,12 @@ while time < tend && step < M
     % store previous solution
     fo      = f;
     Div_fVo = Div_fV;  Div_fVBGo = Div_fVBG; 
-        
+    
+    X(:,2:end-1) = X(:,2:end-1) + abs(UBG(:,1:end-1)+UBG(:,2:end))./2.*dt;
+    Z(2:end-1,:) = Z(2:end-1,:) + abs(WBG(1:end-1,:)+WBG(2:end,:))./2.*dt;
+    X(:,[1 end]) = 2.*X(:,[2 end-1]) - X(:,[3 end-2]);
+    Z([1 end],:) = 2.*Z([2 end-1],:) - Z([3 end-2],:);
+
     % reset residual norms and iteration count
     resnorm  = 1e3;
     resnorm0 = resnorm;
