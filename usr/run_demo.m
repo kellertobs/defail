@@ -1,7 +1,7 @@
 clear; close all;                % #ok<*NASGU> 
 
 % set run parameters
-runID    = 'test';               % run identifier
+runID    = 'demo';               % run identifier
 restart  =  0;                   % restart from file (0: new run; <1: restart from last; >1: restart from specified frame)
 nop      =  1;                   % output frame plotted/saved every 'nop' time steps
 plot_op  =  1;                   % switch on (1) to display results

@@ -7,7 +7,7 @@ EE  =  0.*NN;
 for ii = 1:length(NN)
     
     % set run parameters
-    runID    = 'test';               % run identifier
+    runID    = 'bnchmrk';            % run identifier
     restart  =  0;                   % restart from file (0: new run; <1: restart from last; >1: restart from specified frame)
     nop      =  1;                   % output frame plotted/saved every 'nop' time steps
     plot_op  =  1;                   % switch on (1) to display results
