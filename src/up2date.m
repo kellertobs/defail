@@ -11,10 +11,10 @@ tau(2:end-1,2:end-1) = (  (txx(2:end-1,2:end-1).^2 + tzz(2:end-1,2:end-1).^2 ...
 tau([1 end],:) = tau([end-1 2],:);                                         % periodic boundaries
 tau(:,[1 end]) = tau(:,[end-1 2]);
 
-yieldt = max(1e-16,p + Ty) + etamin.*eps;
+yieldt = max(1e-16,1 + p) + etamin.*eps + bnchmrk*5;
 
 % update rheological parameters
-etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-nn)./nn) );        % shear viscosity
+etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-nn)./nn) );       % shear viscosity
 
 etay  =  log10(yieldt)-log10(eps);                                         % shear visco-plasticity
 etay  =  min(etav,etay);
@@ -40,7 +40,7 @@ dtW = (10.^(( eta(1:end-1,:)+ eta(2:end,:)).*0.5)./(h/2)^2 ...
     +  10.^((zeta(1:end-1,:)+zeta(2:end,:)).*0.5)./(h/2)^2).^-1;           % W iterative step size
 dtU = (10.^(( eta(:,1:end-1)+ eta(:,2:end)).*0.5)./(h/2)^2 ...
     +  10.^((zeta(:,1:end-1)+zeta(:,2:end)).*0.5)./(h/2)^2).^-1;           % U iterative step size
-dtP = (1./(10.^eta) + K./(h/2)^2).^-1;                                     % P iterative step size
+dtP = (1./(10.^eta) + K./(h/2)^2).^-1;                                  % P iterative step size
 
 Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                                 % combine all velocity components
 dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]);             % physical time step

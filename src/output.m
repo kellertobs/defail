@@ -48,10 +48,10 @@ ax(5) = axes(UN{:},'position',[axl+1*axw+1*ahs axb+0*axh+0*avs axw axh]);
 ax(6) = axes(UN{:},'position',[axl+2*axw+2*ahs axb+0*axh+0*avs axw axh]);
 
 set(fh1, 'CurrentAxes', ax(1))
-imagesc(xc,zc,-W(:      ,2:end-1)-WBG(:      ,2:end-1)); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,-W(:      ,2:end-1)-0.*WBG(:      ,2:end-1)); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
 set(fh1, 'CurrentAxes', ax(2))
-imagesc(xc,zc, U(2:end-1,:      )+UBG(2:end-1,:      )); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc, U(2:end-1,:      )+0.*UBG(2:end-1,:      )); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh1, 'CurrentAxes', ax(3))
 imagesc(xc,zc, P(2:end-1,2:end-1)); axis ij equal tight; box on; cb = colorbar;
@@ -113,23 +113,39 @@ if plot_cv
     ax(3) = axes(UN{:},'position',[axl+0*axw+0*ahs axb+0*axh+0*avs axw axh]);
     ax(4) = axes(UN{:},'position',[axl+1*axw+1*ahs axb+0*axh+0*avs axw axh]);
 
-    set(fh3, 'CurrentAxes', ax(1))
-    imagesc(xc,zc,(-res_W.*dtW  ./(1e-16+norm(W(:)+WBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
-    set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
-    set(fh3, 'CurrentAxes', ax(2))
-    imagesc(xc,zc,(-res_U.*dtU  ./(1e-16+norm(U(:)+UBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
-    set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
-    set(fh3, 'CurrentAxes', ax(3))
-    imagesc(xc,zc,(-res_P.*dtP  ./(1e-16+norm(P(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
-    set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. pore pressure $P$'],TX{:},FS{:});
-    set(fh3, 'CurrentAxes', ax(4))
-    imagesc(xc,zc,(-res_f.*dt/10./(1e-16+norm(f(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
-    set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
-    drawnow;
+    if bnchmrk
+        set(fh3, 'CurrentAxes', ax(1))
+        imagesc(xc,zc,-(W-W_mms)./(1e-16+norm(W_mms(:),2)./N)); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['err. matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
+        set(fh3, 'CurrentAxes', ax(2))
+        imagesc(xc,zc, (U-U_mms)./(1e-16+norm(U_mms(:),2)./N)); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['err. matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
+        set(fh3, 'CurrentAxes', ax(3))
+        imagesc(xc,zc, (P-P_mms)./(1e-16+norm(P_mms(:),2)./N)); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['err. pore pressure $P$'],TX{:},FS{:});
+        set(fh3, 'CurrentAxes', ax(4))
+        imagesc(xc,zc, (f-f_mms)./(1e-16+norm(f_mms(:),2)./N)); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['err. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
+        drawnow;
+    else
+        set(fh3, 'CurrentAxes', ax(1))
+        imagesc(xc,zc,(-res_W.*dtW  ./(1e-16+norm(W(:)+WBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
+        set(fh3, 'CurrentAxes', ax(2))
+        imagesc(xc,zc,(-res_U.*dtU  ./(1e-16+norm(U(:)+UBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
+        set(fh3, 'CurrentAxes', ax(3))
+        imagesc(xc,zc,(-res_P.*dtP  ./(1e-16+norm(P(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. pore pressure $P$'],TX{:},FS{:});
+        set(fh3, 'CurrentAxes', ax(4))
+        imagesc(xc,zc,(-res_f.*dt/10./(1e-16+norm(f(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
+        set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
+        drawnow;
+    end
     
     figure(200); clf;
-    p0 = linspace(-Ty,max(p(:)),1e3);
-    plot(p0,eps0.*ones(size(p0)),'k',p0,Ty+p0,'r',p(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
+    p0 = linspace(-1,max(p(:)),1e3);
+    plot(p0,eps0.*ones(size(p0)),'k',p0,1+p0+bnchmrk*5,'r',p(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
     scatter(p(:),tau(:),20,(eta(:)),'filled'); colorbar; colormap(ocean);
     title('Failure Criterion');
     drawnow;
