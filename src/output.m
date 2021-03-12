@@ -50,6 +50,7 @@ ax(6) = axes(UN{:},'position',[axl+2*axw+2*ahs axb+0*axh+0*avs axw axh]);
 set(fh1, 'CurrentAxes', ax(1))
 imagesc(xc,zc,-W(:      ,2:end-1)-0.*WBG(:      ,2:end-1)); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
+text(0,0.4*L,['time ',num2str(time,4)],TX{:},FS{:},'HorizontalAlignment','center','VerticalAlignment','middle')
 set(fh1, 'CurrentAxes', ax(2))
 imagesc(xc,zc, U(2:end-1,:      )+0.*UBG(2:end-1,:      )); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
@@ -83,6 +84,7 @@ ax(6) = axes(UN{:},'position',[axl+2*axw+2*ahs axb+0*axh+0*avs axw axh]);
 set(fh2, 'CurrentAxes', ax(1))
 imagesc(xc,zc,         f(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
+text(0,0.4*L,['time ',num2str(time,4)],TX{:},FS{:},'HorizontalAlignment','center','VerticalAlignment','middle')
 set(fh2, 'CurrentAxes', ax(2))
 imagesc(xc,zc,     ups(2:end-1,2:end-1) ); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['decompaction rate $\dot{\upsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
@@ -153,7 +155,7 @@ end
 
 % save output frame
 if save_op
-    clear ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN p0
+    clear ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN p0 dWi dWii dUi dUii dPi dPii
 
     name = ['../out/',runID,'/',runID,'_sol_',num2str(frame)];
     print(fh1,name,'-dpng','-r300');

@@ -14,7 +14,7 @@ tau(:,[1 end]) = tau(:,[end-1 2]);
 yieldt = max(1e-16,1 + p) + etamin.*eps + bnchmrk*5;
 
 % update rheological parameters
-etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-nn)./nn) );       % shear viscosity
+etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) );       % shear viscosity
 
 etay  =  log10(yieldt)-log10(eps);                                         % shear visco-plasticity
 etay  =  min(etav,etay);
@@ -26,14 +26,14 @@ for k  = 1:ceil(kappa)                                                     % reg
     etay(:,[1 end]) = etay(:,[end-1 2]);
 end
 
-eta  =  etay.*(1-gamma) + eta.*gamma;                                      % effective shear viscosity
+eta  =  etay.*(1-delta) + eta.*delta;                                      % effective shear viscosity
 
 etac = (eta(1:end-1,1:end-1)+eta(2:end,1:end-1) ...                        % evaluate in cell corners
      +  eta(1:end-1,2:end  )+eta(2:end,2:end  )).*0.25;
 
-zeta = eta - max(-6,log10(f0.*f)).*m;                                      % cmpct viscosity
+zeta = eta - max(-6,log10(f0.*f));                                      % cmpct viscosity
 
-K    = f.^n;                                                               % segregation coefficient
+K    = f.^m;                                                               % segregation coefficient
 
 % update iterative and physical time step sizes
 dtW = (10.^(( eta(1:end-1,:)+ eta(2:end,:)).*0.5)./(h/2)^2 ...

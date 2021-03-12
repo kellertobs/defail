@@ -5,7 +5,7 @@ fprintf('\n\n*****  defail  |  %s  |  %s  *****\n\n',runID,datetime);
 load ocean;  
 
 % produce smooth random perturbations
-rng(15);
+rng(5);
 dr = randn(N,N);
 for i = 1:max(smx,smz)
     dr(2:end-1,2:end-1) = dr(2:end-1,2:end-1) ...
@@ -36,13 +36,12 @@ if bnchmrk
     f = f_mms;
 else
     f  =  1 + f1.*dr + f2.*exp(-(X+xpos).^2./wx^2).*exp(-(Z+zpos).^2./wz^2);
-    src_W_mms = zeros(size(WBG));  src_U_mms = zeros(size(UBG));  src_P_mms = zeros(N,N);
 end
-fo     = f;  res_f = 0.*f;  
+res_f = 0.*f;  
 
-W      =  0.*WBG;  Wi = W;  res_W = 0.*W;
-U      =  0.*UBG;  Ui = U;  res_U = 0.*U;
-P      =  0.*f;    Pi = P;  res_P = 0.*P;  
+W      =  0.*WBG;  res_W = 0.*W;
+U      =  0.*UBG;  res_U = 0.*U;
+P      =  0.*f;    res_P = 0.*P;  
 u      =  0.*U;
 w      =  0.*W;
 p      =  0.*P;
@@ -53,14 +52,13 @@ eps0   =  abs(Pu) + abs(Si) + 1e-6;
 exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eps = 0.*P + (abs(Pu) + abs(Si));  
 txx    =  0.*exx;  tzz = 0.*ezz;  txz = 0.*exz;  tau = 0.*eps;
 eta    =  log10( exp(-lmd.*f0.*(f-1)) );
-zeta   =  eta - max(-6,log10(f0.*f)).*m;
+zeta   =  eta - max(-6,log10(f0.*f));
 yieldt =  ones(size(P));
 
 % initialise timing parameters
 step   =  0;
 time   =  0;
 dt     =  h/500;
-dto    =  dt;
 
 % overwrite fields from file if restarting run
 if     restart < 0  % restart from last continuation frame
@@ -102,16 +100,18 @@ while time < tend && step < M
     it       = 0;
     
     % initialise iterative solution guess
-    Wi = W;  Ui = U;  Pi = P;  fi = f;
+    dWi = 0.*W;  Wi = W;
+    dUi = 0.*U;  Ui = U;
+    dPi = 0.*P;  Pi = P;
     
     
     % non-linear iteration loop
     while resnorm/resnorm0 >= rtol && resnorm >= atol && it <= maxit || it <= minit
                 
         % store previous iterative solution guess  
-        Wii = Wi;  Wi = W;
-        Uii = Ui;  Ui = U;
-        Pii = Pi;  Pi = P;
+        dWii = dWi; dWi = W-Wi; Wi = W;
+        dUii = dUi; dUi = U-Ui; Ui = U;
+        dPii = dPi; dPi = P-Pi; Pi = P;
                 
         % update fields
         if ~mod(it,nup); up2date; end
@@ -128,7 +128,7 @@ while time < tend && step < M
             
             if demean; res_f = res_f - mean(res_f(:)); end                 % remove mean from update
             
-            f = f - res_f.*dt/10;                                          % update solution
+            f = f - res_f.*dt/10;                                           % update solution
             
             f([1 end],:) = f([end-1 2],:);                                 % periodic boundaries
             f(:,[1 end]) = f(:,[end-1 2]);
@@ -154,31 +154,31 @@ while time < tend && step < M
         Div_tz = diff(tzz(:,2:end-1),1,1)./h + diff(txz,1,2)./h;           % z-stress divergence
         
         res_W(:,2:end-1) = - Div_tz + diff(P(:,2:end-1),1,1)./h ...        % residual z-momentum equation
-                                    + diff(p(:,2:end-1),1,1)./h ...
-                                    - src_W_mms(:,2:end-1);  
+                                    + diff(p(:,2:end-1),1,1)./h;
+        if bnchmrk; res_W = res_W - src_W_mms; end
 
         res_W([1 end],:) = [sum(res_W([1 end],:),1)./2; ...                % periodic boundaries
                             sum(res_W([1 end],:),1)./2];
         res_W(:,[1 end]) = res_W(:,[end-1 2]);
         
-        if demean; res_W = res_W - mean(res_W(:).*dtW(:))./mean(dtW(:)); end % remove mean from update
+        if demean; res_W = res_W-mean(res_W(:).*dtW(:))./mean(dtW(:)); end % remove mean from update
         
-        W = Wi - alpha.*res_W.*dtW + beta.*(Wi-Wii);                       % update solution
+        W = W - alpha.*res_W.*dtW + beta.*dWi - gamma.*dWii/10;            % update solution
 
         % update x-reference velocity        
         Div_tx  = diff(txx(2:end-1,:),1,2)./h + diff(txz,1,1)./h;          % x-stress divergence
         
         res_U(2:end-1,:) = - Div_tx + diff(P(2:end-1,:),1,2)./h ...        % residual x-momentum equation
-                                    + diff(p(2:end-1,:),1,2)./h ...
-                                    - src_U_mms(2:end-1,:);          
+                                    + diff(p(2:end-1,:),1,2)./h;
+        if bnchmrk; res_U = res_U - src_U_mms; end
         
         res_U([1 end],:) = res_U([end-1 2],:);                             % periodic boundaries
         res_U(:,[1 end]) = [sum(res_U(:,[1 end]),2)./2, ...
                             sum(res_U(:,[1 end]),2)./2];
 
-        if demean; res_U = res_U - mean(res_U(:).*dtU(:))./mean(dtU(:)); end % remove mean from update
+        if demean; res_U = res_U-mean(res_U(:).*dtU(:))./mean(dtU(:)); end % remove mean from update
 
-        U = Ui - alpha.*res_U.*dtU + beta.*(Ui-Uii);                       % update solution
+        U = U - alpha.*res_U.*dtU + beta.*dUi - gamma.*dUii/10;            % update solution
         
         % update velocity divergences
         ups(2:end-1,2:end-1) = diff(U(2:end-1,:),1,2)./h ...               % velocity divergence
@@ -206,14 +206,15 @@ while time < tend && step < M
         txz = 10.^etac.* exz;                                              % xz-shear stress  
         
         % update reference pressure
-        res_P = ups + upss - src_P_mms;                                    % residual mass equation
+        res_P = ups + upss;                                                % residual mass equation
+        if bnchmrk; res_P = res_P - src_P_mms; end
 
         res_P([1 end],:) = res_P([end-1 2],:);                             % periodic boundaries
         res_P(:,[1 end]) = res_P(:,[end-1 2]);
         
-        if demean; res_P = res_P - mean(res_P(:).*dtP(:))./mean(dtP(:)); end % remove mean from update
+        if demean; res_P = res_P-mean(res_P(:).*dtP(:))./mean(dtP(:)); end % remove mean from update
 
-        P = Pi - alpha.*res_P.*dtP + beta.*(Pi-Pii);                       % update solution
+        P = P - alpha.*res_P.*dtP + beta.*dPi - gamma.*dPii/10;            % update solution
         
         % check and report convergence every max(100,nup) iterations
         if ~mod(it,max(100,nup)); report; end
@@ -223,7 +224,7 @@ while time < tend && step < M
     end
     
     % clean workspace
-    clear Wi Wii Ui Uii Pi Pii fo Div_fVo Div_fVBGo Div_tz Div_tx dtW dtU dtP etac
+    clear Wi Ui Pi dtWi dtUi dtPi dtWii dtUii dtPii fo Div_fVo Div_fVBGo Div_tz Div_tx dtW dtU dtP etac
     
     % print diagnostics
     fprintf(1,'\n         time to solution = %4.4f sec\n\n',toc);

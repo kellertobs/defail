@@ -1,7 +1,7 @@
 clear; close all;                % #ok<*NASGU>
 
 % set parameter space to be tested
-NN  =  [50,100,200];
+NN  =  [50,75,100];
 EE  =  0.*NN;
 
 for ii = 1:length(NN)
@@ -13,7 +13,7 @@ for ii = 1:length(NN)
     plot_op  =  1;                   % switch on (1) to display results
     save_op  =  0;                   % switch on (1) to save output to file
     plot_cv  =  1;                   % switch on (1) to live plot iterative convergence
-    bnchmrk  =  0;                   % switch on (1) to run solitary wave benchmark
+    bnchmrk  =  1;                   % switch on (1) to run manufactured solution benchmark
     demean   =  1;                   % remove mean from solution fields
     
     % set model domain parameters
@@ -26,8 +26,8 @@ for ii = 1:length(NN)
     tend     =  1;                   % end time for simulation [s]
     
     % set model liquid fraction parameters
-    f0       =  0.05;                % background liquid fraction
-    f1       =  0.20;                % amplitude of random noise
+    f0       =  0.04;                % background liquid fraction
+    f1       =  0.25;                % amplitude of random noise
     f2       =  0.00;                % amplitude of gaussian
     smx      =  (N/50)^2;            % smoothness of initial random noise in x-direction
     smz      =  (N/50)^2;            % smoothness of initial random noise in z-direction
@@ -37,9 +37,8 @@ for ii = 1:length(NN)
     zpos     =  0;                   % z-position of initial gaussian (0 = middle of domain)
     
     % set model rheology parameters
-    n        =  3;                   % permeability powerlaw
-    m        =  1;                   % compaction viscosity powerlaw
-    nn       =  1;                   % non-Newtonian shear viscosity powerlaw
+    m        =  3;                   % permeability powerlaw
+    n        =  1;                   % non-Newtonian shear viscosity powerlaw
     lmd      =  30;                  % shear viscosity liquid-weakening parameter
     
     % stress control parameters
@@ -48,19 +47,20 @@ for ii = 1:length(NN)
     B        =  1;                   % ratio of buoyancy force to
     
     % set numerical model parameters
-    nup      =  20;                  % nonlinear coefficients, residual norms updated every 'nup' iterations
-    CFL      =  0.50;                % (physical) time stepping courant number (multiplies stable step) [0,1]
+    nup      =  10;                  % nonlinear coefficients, residual norms updated every 'nup' iterations
+    CFL      =  1.00;                % (physical) time stepping courant number (multiplies stable step) [0,1]
     ADVN     =  'FRM';               % advection scheme ('UPW2', 'UPW3', or 'FRM')
     theta    =  0.50;                % time-stepping scheme selector (1=BE, 1/2=CN, 0=FE)
-    rtol     =  1e-12;               % outer its relative tolerance
-    atol     =  1e-12;               % outer its absolute tolerance
+    rtol     =  1e-9;                % outer its relative tolerance
+    atol     =  1e-9;                % outer its absolute tolerance
     minit    =  500;                 % minimum solver iterations
     maxit    =  1e5;                 % maximum solver iterations
-    alpha    =  0.98;                % inner its step size (fraction of stable step) [0,1]
-    beta     =  0.9-4./(N-2);        % iterative damping parameter (fraction of previous step) [0,1]
-    gamma    =  0.00;                % iterative relaxation for rheology updates [0,1]
-    kappa    =  0.00;                % regularisation of eIIvp for failure [0,1]
-    etamin   =  1e-16;               % minimum viscosity for regularisation
+    alpha    =  0.99;                % inner its step size (fraction of stable step) [0,1]
+    beta     =  0.85;                % iterative damping parameter (fraction of previous step) [0,1]
+    gamma    =  0.75;                % iterative damping parameter (fraction of pre-previous step) [0,1]
+    delta    =  0;                   % iterative relaxation for rheology updates [0,1]
+    kappa    =  0;                   % regularisation of eIIvp for failure [0,1]
+    etamin   =  0;                   % minimum viscosity for regularisation
     
     % create output directory
     if ~isfolder(['../out/',runID])

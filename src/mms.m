@@ -24,9 +24,9 @@ fprintf(1,' . ');
 
 % update coefficients
  eps_mms(x,z) = sqrt(1/2*(exx_mms.^2 + ezz_mms.^2 + 2*exz_mms.^2));
- eta_mms(x,z) = exp(-lmd*f0.*(f_mms-1)) .* (eps_mms./(abs(Pu)+abs(Si))).^((1-nn)./nn);
-zeta_mms(x,z) = eta_mms ./ (f0.*f_mms).^m;
-K_mms(x,z)    = f_mms.^n;
+ eta_mms(x,z) = exp(-lmd*f0.*(f_mms-1)) .* (eps_mms./(abs(Pu)+abs(Si))).^((1-n)./n);
+zeta_mms(x,z) = eta_mms ./ (f0.*f_mms);
+K_mms(x,z)    = f_mms.^m;
 fprintf(1,' . ');
 
 % update stresses
