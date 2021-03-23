@@ -14,10 +14,12 @@ tau(:,[1 end]) = tau(:,[end-1 2]);
 yieldt = max(1e-16,1 + p) + etamin.*eps + bnchmrk*5;
 
 % update rheological parameters
-etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) );       % shear viscosity
+etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) );         % shear viscosity
 
 etay  =  log10(yieldt)-log10(eps);                                         % shear visco-plasticity
 etay  =  min(etav,etay);
+
+zetay =  etay - max(-6,log10(f0.*f));                                      % cmpct viscosity
 
 for k  = 1:ceil(kappa)                                                     % regularisation
     kk = kappa/ceil(kappa);
@@ -26,12 +28,18 @@ for k  = 1:ceil(kappa)                                                     % reg
     etay(:,[1 end]) = etay(:,[end-1 2]);
 end
 
-eta  =  etay.*(1-delta) + eta.*delta;                                      % effective shear viscosity
+for k  = 1:ceil(kappa)                                                     % regularisation
+    kk = kappa/ceil(kappa);
+    zetay(2:end-1,2:end-1) = zetay(2:end-1,2:end-1) + kk.*(diff(zetay(2:end-1,:),2,2)+diff(zetay(:,2:end-1),2,1))./8;
+    zetay([1 end],:) = zetay([end-1 2],:);
+    zetay(:,[1 end]) = zetay(:,[end-1 2]);
+end
+
+ eta  =   etay.*(1-gamma) +  eta.*gamma;                                   % effective shear viscosity
+zeta  =  zetay.*(1-gamma) + zeta.*gamma;                                   % effective shear viscosity
 
 etac = (eta(1:end-1,1:end-1)+eta(2:end,1:end-1) ...                        % evaluate in cell corners
      +  eta(1:end-1,2:end  )+eta(2:end,2:end  )).*0.25;
-
-zeta = eta - max(-6,log10(f0.*f));                                      % cmpct viscosity
 
 K    = f.^m;                                                               % segregation coefficient
 
@@ -40,10 +48,4 @@ dtW = (10.^(( eta(1:end-1,:)+ eta(2:end,:)).*0.5)./(h/2)^2 ...
     +  10.^((zeta(1:end-1,:)+zeta(2:end,:)).*0.5)./(h/2)^2).^-1;           % W iterative step size
 dtU = (10.^(( eta(:,1:end-1)+ eta(:,2:end)).*0.5)./(h/2)^2 ...
     +  10.^((zeta(:,1:end-1)+zeta(:,2:end)).*0.5)./(h/2)^2).^-1;           % U iterative step size
-dtP = (1./(10.^eta) + K./(h/2)^2).^-1;                                  % P iterative step size
-
-Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                                 % combine all velocity components
-dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]);             % physical time step
-
-% clean workspace
-clear Vel k kk etav etay
+dtP = (1./(10.^eta) + K./(h/2)^2).^-1;                                     % P iterative step size
