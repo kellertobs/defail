@@ -57,8 +57,7 @@ for ii = 1:length(NN)
     maxit    =  1e5;                 % maximum solver iterations
     alpha    =  0.99;                % inner its step size (fraction of stable step) [0,1]
     beta     =  0.85;                % iterative damping parameter (fraction of previous step) [0,1]
-    gamma    =  0.75;                % iterative damping parameter (fraction of pre-previous step) [0,1]
-    delta    =  0;                   % iterative relaxation for rheology updates [0,1]
+    gamma    =  0;                   % iterative relaxation for rheology updates [0,1]
     kappa    =  0;                   % regularisation of eIIvp for failure [0,1]
     etamin   =  0;                   % minimum viscosity for regularisation
     
