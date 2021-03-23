@@ -1,5 +1,5 @@
-vz = W;
-vx = U;
+vz = W+WBG;
+vx = U+UBG;
 wp = vz(2:end  ,2:end-1);
 wm = vz(1:end-1,2:end-1);
 up = vx(2:end-1,2:end  );
