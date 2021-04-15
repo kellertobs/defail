@@ -34,5 +34,8 @@ end
 if plot_cv
     figure(100); if it==0; clf; else; hold on; end
     plot(it,log10(resnorm),'r.','MarkerSize',15); box on; axis tight;
+    xlabel('# iterations')
+    ylabel('log_1_0 residual norm')
+    title('Solver convergence')
     drawnow;
 end

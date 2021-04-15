@@ -18,7 +18,7 @@ set(0,'DefaultFigureVisible',plot_op)
 
 % prepare and plot figure for solution fields
 fh1 = figure(1); clf; colormap(ocean);
-set(fh1,UN{:},'Position',[5 5 fw fh]);
+set(fh1,UN{:},'Position',[2 2 fw fh]);
 set(fh1,'PaperUnits','Centimeters','PaperPosition',[0 0 fw fh],'PaperSize',[fw fh]);
 set(fh1,'Color','w','InvertHardcopy','off');
 set(fh1,'Resize','off');
@@ -52,7 +52,7 @@ drawnow;
 
 % prepare and plot figure for material properties
 fh2 = figure(2); clf; colormap(ocean);
-set(fh2,UN{:},'Position',[10 10 fw fh]);
+set(fh2,UN{:},'Position',[4 4 fw fh]);
 set(fh2,'PaperUnits','Centimeters','PaperPosition',[0 0 fw fh],'PaperSize',[fw fh]);
 set(fh2,'Color','w','InvertHardcopy','off');
 set(fh2,'Resize','off');
@@ -88,7 +88,7 @@ drawnow;
 if plot_cv
     fh3 = figure(3); clf; colormap(ocean);
     fw = axl + 2*axw + 1*ahs + axr;
-    set(fh3,UN{:},'Position',[15 15 fw fh]);
+    set(fh3,UN{:},'Position',[6 6 fw fh]);
     set(fh3,'PaperUnits','Centimeters','PaperPosition',[0 0 fw fh],'PaperSize',[fw fh]);
     set(fh3,'Color','w','InvertHardcopy','off');
     set(fh3,'Resize','off');
@@ -131,6 +131,8 @@ if plot_cv
     p0 = linspace(-1,max(p(:)),1e3);
     plot(p0,eps0.*ones(size(p0)),'k',p0,1+p0+bnchmrk*5,'r',p(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
     scatter(p(:),tau(:),20,(eta(:)),'filled'); colorbar; colormap(ocean);
+    xlabel('Effective pressure')
+    ylabel('Stress magnitude')
     title('Failure Criterion');
     drawnow;
 end
