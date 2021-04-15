@@ -90,12 +90,7 @@ while time < tend && step < M
     tic;
     
     % store previous solution
-    fo = f; Div_fVo = Div_fV;  %Div_fVBGo = Div_fVBG;
-    
-%     X(:,2:end-1) = X(:,2:end-1) - (UBG(:,1:end-1)+UBG(:,2:end))./2.*dt;
-%     Z(2:end-1,:) = Z(2:end-1,:) - (WBG(1:end-1,:)+WBG(2:end,:))./2.*dt;
-%     X(:,[1 end]) = 2.*X(:,[2 end-1]) - X(:,[3 end-2]);
-%     Z([1 end],:) = 2.*Z([2 end-1],:) - Z([3 end-2],:);
+    fo = f; Div_fVo = Div_fV;
 
     % reset residual norms and iteration count
     resnorm  = 1e3;
@@ -109,7 +104,7 @@ while time < tend && step < M
     
     
     % non-linear iteration loop
-    startup = 2*double(step<=1) + double(step>1);
+    startup = 2*double(step<=0) + double(step>0);
     while resnorm/resnorm0 >= rtol/startup && resnorm >= atol && it <= maxit*startup || it <= minit
                 
         % store previous iterative solution guess  
