@@ -14,7 +14,7 @@ tau(:,[1 end]) = tau(:,[end-1 2]);
 yieldt = max(1e-16,1 + p) + etamin.*eps + bnchmrk*5;
 
 % update rheological parameters
-etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) );         % shear viscosity
+etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) + etamin);         % shear viscosity
 
 etay  =  log10(yieldt)-log10(eps);                                         % shear visco-plasticity
 etay  =  min(etav,etay);
