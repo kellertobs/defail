@@ -84,7 +84,7 @@ elseif restart > 0  % restart from specified continuation frame
 end
 
 % time stepping loop
-while time < tend && step < M
+while time < tend && step <= M
     
     fprintf(1,'\n\n*****  step %d;  dt = %4.4e;  time = %4.4e;\n\n',step,dt,time);
     tic;
@@ -119,13 +119,12 @@ while time < tend && step < M
         
         % update liquid fraction
         if ~mod(it,nup) && step > 0
-            flxdiv;  %flxdivBG;                                             % flux divergence for advection/compaction
+            flxdiv;                                                        % flux divergence for advection/compaction
             
-            Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                                 % combine all velocity components
-            dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]);             % physical time step
+            Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                     % combine all velocity components
+            dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]); % physical time step
 
-            res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  );% ...
-                               %- (theta.*Div_fVBG + (1-theta).*Div_fVBGo); % residual liquid evolution equation
+            res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ); % residual liquid evolution equation
             
             df = - res_f.*dt/10;
             
@@ -135,9 +134,6 @@ while time < tend && step < M
             if demean; df = df - mean(df(:)); end                          % remove mean from update
             
             f = f + alpha*df;                                              % update solution
-            
-%             f([1 end],:) = f([end-1 2],:);                                 % periodic boundaries
-%             f(:,[1 end]) = f(:,[end-1 2]);
         end
         
         
@@ -274,8 +270,10 @@ while time < tend && step < M
     fprintf(1,'         min eps  = %s%4.4f;   mean eps  = %s%4.4f;   max eps  = %s%4.4f;\n'  ,int8(min(eps(:))<0),min(eps(:)),int8(mean(eps(:))<0),mean(eps(:)),int8(max(eps(:))<0),max(eps(:)));
     fprintf(1,'         min tau  = %s%4.4f;   mean tau  = %s%4.4f;   max tau  = %s%4.4f;\n\n',int8(min(tau(:))<0),min(tau(:)),int8(mean(tau(:))<0),mean(tau(:)),int8(max(tau(:))<0),max(tau(:)));
 
+    
     % update parameters and plot results
     if ~mod(step,nop); up2date; output; end
+    
     
     % increment time step
     time = time+dt;
