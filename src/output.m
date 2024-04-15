@@ -129,7 +129,7 @@ if plot_cv
     
     figure(4); clf;
     p0 = linspace(-1,max(p(:)),1e3);
-    plot(p0,eps0.*ones(size(p0)),'k',p0,1+p0+bnchmrk*5,'r',p(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
+    plot(p0,eps0.*ones(size(p0)),'k',p0,1+p0+bnchmrk*5,'r',yieldp(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
     scatter(p(:),tau(:),20,(eta(:)),'filled'); colorbar; colormap(ocean);
     xlabel('Effective pressure')
     ylabel('Stress magnitude')

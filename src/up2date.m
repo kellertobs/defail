@@ -11,15 +11,20 @@ tau(2:end-1,2:end-1) = (  (txx(2:end-1,2:end-1).^2 + tzz(2:end-1,2:end-1).^2 ...
 tau([1 end],:) = tau([end-1 2],:);                                         % periodic boundaries
 tau(:,[1 end]) = tau(:,[end-1 2]);
 
-yieldt = max(1e-16,1 + p) + etamin.*eps + bnchmrk*5;
+yieldt = max( 1e-16,1   + p) + etamin.*eps + bnchmrk*5;
+yieldp = min(-1e-16,tau - 1) - etamin./max(1e-6,f0*f).*max(1e-16,ups) - bnchmrk*5;
 
 % update rheological parameters
-etav  =  log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) + etamin );% shear viscosity
+etav  = log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) + etamin);  % shear viscosity
+zetav = etav - max(-6,log10(f0.*f));
 
-etay  =  log10(yieldt) - log10(eps);                                       % shear visco-plasticity
-etay  =  min(etav,etay);
+etay  = log10( yieldt) - log10(eps);                                       % shear visco-plasticity
+etay  = min(etav,etay);
 
-zetay =  etay - max(-6,log10(f0.*f));                                      % cmpct viscosity
+zetay  = log10(-yieldp) - log10(max(1e-16,ups));                           % shear visco-plasticity
+zetay  = min(zetav,zetay);
+
+% zetay =  etay - max(-6,log10(f0.*f));                                      % cmpct viscosity
 
 for k  = 1:ceil(kappa)                                                     % regularisation
     kk = kappa/ceil(kappa);
