@@ -1,18 +1,18 @@
 clear;
 
-runID = 'PuC2_B10_N500';
-start = 50;
-step  = 5;
-stop  = 50;
+runID = 'demo';
+start = 0;
+step  = 1;
+stop  = 0;
 sat   = 5;
-smth  = 0.05;
-c     = 4;
+smth  = 0.1;
+c     = 3;
 cc    = 3;
 
 rng(24);
 Fc = randn(cc,c).*2;
 
-load refspct;
+% load refspct;
 
 for frame = start:step:stop
     
@@ -110,7 +110,7 @@ for frame = start:step:stop
 
     Fs  = 1/(h*sqrt(f0));             % grid spacing in compaction lengths
 
-    F  = reshape(sum(Ap.^2./c,2).^0.5,500,500);         % Melt fraction reshaped to 2D array
+    F  = reshape(sum(Ap.^2./c,2).^0.5,N-2,N-2);  % Melt fraction reshaped to 2D array
     
     figure(6); clf; 
     imagesc(Xax,Xax,F); axis equal tight; colorbar; colormap(copper); drawnow;
@@ -128,7 +128,7 @@ for frame = start:step:stop
     xlabel('Period [$\delta_0$]','Interpreter','latex','FontSize',16);
     ylabel('Spectral Energy','Interpreter','latex','FontSize',16);
     
-    S = fft(rot90(F),n,2);                  % raw FFT spectrum
+    S = fft(rot90(F),n,2);           % raw FFT spectrum
     
     S2 = abs(S/(N-2));               % double-sided spectrum
     S1 = 2*S2(:,1:n/2+1);            % single-sided spectrum
