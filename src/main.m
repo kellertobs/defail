@@ -119,14 +119,15 @@ while time < tend && step <= M
         
         % update liquid fraction
         if ~mod(it,nup) && step > 0
-            flxdiv;                                                        % flux divergence for advection/compaction
+%             flxdiv;                                                        % flux divergence for advection/compaction
+            Div_fV(2:end-1,2:end-1) = -advect(f(2:end-1,2:end-1),U(2:end-1,:)+UBG(2:end-1,:),-W(:,2:end-1)-WBG(:,2:end-1),h,{'weno5',''},[1,2],{'periodic','periodic'});
             
             Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                     % combine all velocity components
             dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]); % physical time step
 
             res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ); % residual liquid evolution equation
             
-            df = - res_f.*dt/10;
+            df = - res_f.*dt/2;
             
             df([1 end],:) = df([end-1 2],:);                               % periodic boundaries
             df(:,[1 end]) = df(:,[end-1 2]);
