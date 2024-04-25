@@ -11,46 +11,61 @@ tau(2:end-1,2:end-1) = (  (txx(2:end-1,2:end-1).^2 + tzz(2:end-1,2:end-1).^2 ...
 tau([1 end],:) = tau([end-1 2],:);                                         % periodic boundaries
 tau(:,[1 end]) = tau(:,[end-1 2]);
 
-yieldt = max( 1e-16,1   + p) + etamin.*eps + bnchmrk*5;
-yieldp = min(-1e-16,tau - 1) - etamin./max(1e-6,f0*f).*max(1e-16,ups) - bnchmrk*5;
+% update yield criterion
+tt   = 1-(f-1)*f0;                                                         % tensile strength reduced by porosity
 
-% update rheological parameters
-etav  = log10( exp(-lmd.*f0.*(f-1)) .* (eps./eps0).^((1-n)./n) + etamin);  % shear viscosity
-zetav = etav - max(-6,log10(f0.*f));
+fyt  = reshape(([p(:)  tau(:)] + [1 -1  ] - [-  tt(:) 0*tt(:)])/[1 1],N,N);% tensile yield factor
+tyt = max( 1e-6,   0 + fyt );                                              % tensile yield stress
+pyt = max( -tt , -tt + fyt );                                              % tensile yield pressure
 
-etay  = log10( yieldt) - log10(eps);                                       % shear visco-plasticity
+tys = max( 1e-6,2*tt + p/2 );                                              % shear yield stress
+
+ty  = min(tyt,tys) + bnchmrk*5;                                            % combined yield stress
+py  = pyt + bnchmrk*5;                                                     % combined yield pressure
+
+% update viscosities
+etav  = exp(-lmd.*f0.*(f-1)) .* (1/2 + (eps./eps0/2).^-((1-n)./n)).^-1;    % shear viscosity
+zetav = etav./max(-6,f0.*f);                                               % compaction viscosity
+
+% update visco-plasticities
+etay  = ty./max(1e-9,eps) + etamin;                                        % shear visco-plasticity
 etay  = min(etav,etay);
 
-zetay  = log10(-yieldp) - log10(max(1e-16,ups));                           % shear visco-plasticity
-zetay  = min(zetav,zetay);
+zetay = -min(-1e-6,py)./max(1e-9,ups) + etamin./f/f0;                      % compaction visco-plasticity
+zetay = min(zetav,zetay);
 
-% zetay =  etay - max(-6,log10(f0.*f));                                      % cmpct viscosity
-
-for k  = 1:ceil(kappa)                                                     % regularisation
+% apply regularisation
+for k  = 1:ceil(kappa)                                                     
     kk = kappa/ceil(kappa);
     etay(2:end-1,2:end-1) = etay(2:end-1,2:end-1) + kk.*(diff(etay(2:end-1,:),2,2)+diff(etay(:,2:end-1),2,1))./8;
     etay([1 end],:) = etay([end-1 2],:);
     etay(:,[1 end]) = etay(:,[end-1 2]);
-end
 
-for k  = 1:ceil(kappa)                                                     % regularisation
-    kk = kappa/ceil(kappa);
     zetay(2:end-1,2:end-1) = zetay(2:end-1,2:end-1) + kk.*(diff(zetay(2:end-1,:),2,2)+diff(zetay(:,2:end-1),2,1))./8;
     zetay([1 end],:) = zetay([end-1 2],:);
     zetay(:,[1 end]) = zetay(:,[end-1 2]);
 end
 
+% relax visco-plasticity update
  eta  =   etay.*(1-gamma) +  eta.*gamma;                                   % effective shear viscosity
-zeta  =  zetay.*(1-gamma) + zeta.*gamma;                                   % effective shear viscosity
+zeta  =  zetay.*(1-gamma) + zeta.*gamma;                                   % effective compaction viscosity
 
 etac = (eta(1:end-1,1:end-1)+eta(2:end,1:end-1) ...                        % evaluate in cell corners
      +  eta(1:end-1,2:end  )+eta(2:end,2:end  )).*0.25;
 
-K    = f.^m;                                                               % segregation coefficient
+% get plastic strain rates
+epsp = eps - tau./ etav;
+upsp = ups +   p./zetav;
 
-% update iterative and physical time step sizes
-dtW = (10.^(( eta(1:end-1,:)+ eta(2:end,:)).*0.5)./(h/2)^2 ...
-    +  10.^((zeta(1:end-1,:)+zeta(2:end,:)).*0.5)./(h/2)^2).^-1;           % W iterative step size
-dtU = (10.^(( eta(:,1:end-1)+ eta(:,2:end)).*0.5)./(h/2)^2 ...
-    +  10.^((zeta(:,1:end-1)+zeta(:,2:end)).*0.5)./(h/2)^2).^-1;           % U iterative step size
-dtP = (1./(10.^eta) + K./(h/2)^2).^-1;                                     % P iterative step size
+% update segregation coefficients
+K    = f.^m + (epsp + upsp)/10;                                            % segregation coefficient
+
+Kx   = (K(:,1:end-1)+K(:,2:end)).*0.5;                                     % evaluate on cell faces
+Kz   = (K(1:end-1,:)+K(2:end,:)).*0.5;
+
+% update iterative pseudo-time step sizes
+dtW = (max( etav(1:end-1,:), etav(2:end,:))./(h/2)^2 ...
+    +  max(zetav(1:end-1,:),zetav(2:end,:))./(h/2)^2).^-1;                 % W iterative step size
+dtU = (max( etav(:,1:end-1), etav(:,2:end))./(h/2)^2 ...
+    +  max(zetav(:,1:end-1),zetav(:,2:end))./(h/2)^2).^-1;                 % U iterative step size
+dtP = (1./zetav + K./(h/2)^2).^-1;                                         % P iterative step size

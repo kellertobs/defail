@@ -5,7 +5,7 @@ fprintf('\n\n*****  defail  |  %s  |  %s  *****\n\n',runID,datetime);
 load ocean;  
 
 % produce smooth random perturbations
-rng(5);
+rng(15);
 dr = randn(N,N);
 for i = 1:max(smx,smz)
     dr(2:end-1,2:end-1) = dr(2:end-1,2:end-1) ...
@@ -13,8 +13,8 @@ for i = 1:max(smx,smz)
                        + smx./max(smx,smz).*diff(dr(2:end-1,:),2,2)./8;
     dr = dr - mean(dr(:));
     dr = dr./max(abs(dr(:)));
-    dr([1 2 end-1 end],:) = 0;%dr([end-1 2],:);%dr([round(N/2)-1 round(N/2)],:);
-    dr(:,[1 2 end-1 end]) = 0;%dr(:,[end-1 2]);%dr(:,[round(N/2)-1 round(N/2)]);
+    dr([1 2 end-1 end],:) = 0;
+    dr(:,[1 2 end-1 end]) = 0;
 end
 
 % get coordinate arrays
@@ -40,23 +40,26 @@ if bnchmrk
 else
     f  =  1 + f1.*dr + f2.*exp(-(X+xpos).^2./wx^2).*exp(-(Z+zpos).^2./wz^2);
 end
-res_f = 0.*f;  df = 0.*f;
+res_f = 0.*f;  dfi = 0.*f;
 
-W      =  0.*WBG;  res_W = 0.*W;  dW = 0.*W;
-U      =  0.*UBG;  res_U = 0.*U;  dU = 0.*U;
-P      =  0.*f;    res_P = 0.*P;  dP = 0.*P;
+W      =  0.*WBG;  res_W = 0.*W;  dWi = 0.*W;
+U      =  0.*UBG;  res_U = 0.*U;  dUi = 0.*U;
+P      =  0.*f;    res_P = 0.*P;  dPi = 0.*P;
 u      =  0.*U;
 w      =  0.*W;
 p      =  0.*P;
 
+Pu0 = Pu; Si0 = Si; B0 = B; Pu = 0; Si = 0; B = 0;
+
 % initialise parameter fields
-ups    =  0.*P;  upss = 0.*P;  Div_fV = 0.*P;  %Div_fVBG = 0.*P;
-eps0   =  abs(Pu) + abs(Si) + 1e-6;  
-exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eps = 0.*P + (abs(Pu) + abs(Si));  
-txx    =  0.*exx;  tzz = 0.*ezz;  txz = 0.*exz;  tau = 0.*eps;
-eta    =  log10( exp(-lmd.*f0.*(f-1)) );
-zeta   =  eta - max(-6,log10(f0.*f));
-yieldt =  ones(size(P));
+ups    =  0.*P;  upss = 0.*P;  Div_fV = 0.*P;
+eps0   =  abs(Pu) + abs(Si) + B*f0*f1 + 1e-16;  
+exx    =  0.*P - Pu;  ezz = 0.*P + Pu;  exz = zeros(N-1,N-1) - Si;  eps = 0.*P + 0*eps0;  
+txx    =  0.*exx;  tzz = 0.*ezz;  txz = 0.*exz;  tau = etamin.*eps;
+eta    =  exp(-lmd.*f0.*(f-1));
+zeta   =  eta./max(-6,f0.*f);
+ty     =  ones(size(P))/2;
+py     = -ones(size(P))/2;
 
 % initialise timing parameters
 step   =  0;
@@ -65,6 +68,7 @@ dt     =  0;
 
 % print initial condition
 if ~restart; up2date; output; end
+
 
 % overwrite fields from file if restarting run
 if     restart < 0  % restart from last continuation frame
@@ -92,64 +96,64 @@ while time < tend && step <= M
     % store previous solution
     fo = f; Div_fVo = Div_fV;
 
+    % ramp up forcing terms
+    Pu = 0.25*Pu0 + 0.75*Pu;
+    Si = 0.25*Si0 + 0.75*Si;
+    B  = 0.25*B0  + 0.75*B;
+    eps0 = abs(Pu) + abs(Si) + B*f0*f1 + 1e-16;  
+
     % reset residual norms and iteration count
     resnorm  = 1e3;
     resnorm0 = resnorm;
     it       = 0;
     
-    % initialise iterative solution guess
+    % initialise iterative solution updates
     dWi = 0.*W;
     dUi = 0.*U;
     dPi = 0.*P;
-    
+    dfi = 0.*f;
     
     % non-linear iteration loop
-    startup = 2*double(step<=0) + double(step>0);
-    while resnorm/resnorm0 >= rtol/startup && resnorm >= atol && it <= maxit*startup || it <= minit
+    frst = 2*double(step<=0) + double(step>0);
+    while resnorm/resnorm0 >= rtol^frst && resnorm >= atol^frst && it <= maxit*frst || it <= minit
                 
-        % store previous iterative solution guess  
-        Wi = W;
-        Ui = U;
-        Pi = P;
-                
-        
         % update fields
         if ~mod(it,nup); up2date; end
 
         
         % update liquid fraction
         if ~mod(it,nup) && step > 0
-%             flxdiv;                                                        % flux divergence for advection/compaction
-            Div_fV(2:end-1,2:end-1) = -advect(f(2:end-1,2:end-1),U(2:end-1,:)+UBG(2:end-1,:),-W(:,2:end-1)-WBG(:,2:end-1),h,{'weno5',''},[1,2],{'periodic','periodic'});
+                                                                           % flux divergence for advection/compaction
+            Div_fV(2:end-1,2:end-1) = advect(1/f0-f(2:end-1,2:end-1),U(2:end-1,:)+UBG(2:end-1,:),W(:,2:end-1)+WBG(:,2:end-1),h,{'weno5',''},[1,2],{'periodic','periodic'});
             
             Vel = [U(:)+UBG(:);W(:)+WBG(:);u(:);w(:)];                     % combine all velocity components
             dt  = CFL*min([h/2/max(abs(Vel)), 0.05./max(abs(Div_fV(:)))]); % physical time step
 
             res_f = (f-fo)./dt - (theta.*Div_fV   + (1-theta).*Div_fVo  ); % residual liquid evolution equation
             
-            df = - res_f.*dt/2;
+            dfi = - alpha*res_f.*dt/2;% + beta*dfi;                          % iterative solution upate
             
-            df([1 end],:) = df([end-1 2],:);                               % periodic boundaries
-            df(:,[1 end]) = df(:,[end-1 2]);
+            dfi([1 end],:) = dfi([end-1 2],:);                             % periodic boundaries
+            dfi(:,[1 end]) = dfi(:,[end-1 2]);
             
-            if demean; df = df - mean(df(:)); end                          % remove mean from update
+            if demean; dfi = dfi - mean(dfi(:)); end                       % remove mean from update
             
-            f = f + alpha*df;                                              % update solution
+            f = f + dfi;                                                   % update solution
         end
         
         
         % update segregation velocities and compaction pressure
-        w   = -(K(1:end-1,:)+K(2:end,:)).*0.5 .* (diff(P,1,1)./h + B);     % z-segregation velocity
+        w   = - Kz .* (diff(P,1,1)./h + B);                                % z-segregation velocity
         w([1 end],:) = [sum(w([1 end],:),1)./2; ...                        % periodic boundaries
                         sum(w([1 end],:),1)./2];
         w(:,[1 end]) = w(:,[end-1 2]);
         
-        u   = - (K(:,1:end-1)+K(:,2:end)).*0.5 .* (diff(P,1,2)./h);        % x-segregation velocity
+        u   = - Kx .* (diff(P,1,2)./h);                                    % x-segregation velocity
         u([1 end],:) = u([end-1 2],:);                                     % periodic boundaries
         u(:,[1 end]) = [sum(u(:,[1 end]),2)./2, ...
                         sum(u(:,[1 end]),2)./2];
                         
-        p   = -10.^zeta .* ups;                                            % compaction pressure
+        p   = -zeta .* ups;                                                % compaction pressure
 
         p([1 end],:) = p([end-1 2],:);                                     % periodic boundaries
         p(:,[1 end]) = p(:,[end-1 2]);
@@ -164,10 +168,9 @@ while time < tend && step <= M
         ezz(:,[1 end])   = ezz(:,[end-1 2]);          
         exz              = 1/2.*(diff(U,1,1)./h+diff(W,1,2)./h) - Si;      % shear strain rate
         
-        % update stresses
-        txx = 10.^eta .* exx;                                              % x-normal stress
-        tzz = 10.^eta .* ezz;                                              % z-normal stress
-        txz = 10.^etac.* exz;                                              % xz-shear stress  
+        txx = eta .* exx;                                                  % x-normal stress
+        tzz = eta .* ezz;                                                  % z-normal stress
+        txz = etac.* exz;                                                  % xz-shear stress
         
         
         % update z-reference velocity
@@ -178,17 +181,15 @@ while time < tend && step <= M
                                 
         if bnchmrk; res_W = res_W - src_W_mms; end
         
-        dW = -res_W.*dtW;
+        dWi = - alpha*res_W.*dtW + beta*dWi;                               % iterative solution update
         
-        dW([1 end],:) = [sum(dW([1 end],:),1)./2; ...                      % periodic boundaries
-                         sum(dW([1 end],:),1)./2];
-        dW(:,[1 end]) = dW(:,[end-1 2]);
+        dWi([1 end],:) = [sum(dWi([1 end],:),1)./2; ...                    % periodic boundaries
+                         sum(dWi([1 end],:),1)./2];
+        dWi(:,[1 end]) = dWi(:,[end-1 2]);
                 
-        if demean; dW = dW-mean(dW(:)); end                                % remove mean from update
+        if demean; dWi = dWi-mean(dWi(:)); end                             % remove mean from update
 
-        W = Wi + alpha*dW + beta*dWi;                                      % update z-velocity solution
-
-        dWi = W - Wi;                                                      % store update step
+        W = W + dWi;                                                       % update z-velocity solution
         
 
         % update x-reference velocity        
@@ -199,20 +200,16 @@ while time < tend && step <= M
                                 
         if bnchmrk; res_U = res_U - src_U_mms; end
         
-        dU = -res_U.*dtU;
+        dUi = - alpha*res_U.*dtU + beta*dUi;                               % iterative solution update
         
-        dU([1 end],:) = dU([end-1 2],:);                                   % periodic boundaries
-        dU(:,[1 end]) = [sum(dU(:,[1 end]),2)./2, ...
-                         sum(dU(:,[1 end]),2)./2];
+        dUi([1 end],:) = dUi([end-1 2],:);                                 % periodic boundaries
+        dUi(:,[1 end]) = [sum(dUi(:,[1 end]),2)./2, ...
+                         sum(dUi(:,[1 end]),2)./2];
 
-        if demean; dU = dU-mean(dU(:)); end % remove mean from update
-        
-        dU = dU-mean(dU(:));                                               % remove mean from update
-        
-        U = Ui + alpha*dU + beta*dUi;                                      % update x-velocity solution
-      
-        dUi = U - Ui;                                                      % store update step
-        
+        if demean; dUi = dUi-mean(dUi(:)); end                             % remove mean from update
+                
+        U = U + dUi;                                                       % update x-velocity solution
+              
                 
         % update velocity divergences
         ups(2:end-1,2:end-1) = diff(U(2:end-1,:),1,2)./h ...               % velocity divergence
@@ -231,21 +228,19 @@ while time < tend && step <= M
         
         if bnchmrk; res_P = res_P - src_P_mms; end
         
-        dP = -res_P.*dtP;
+        dPi = - alpha*res_P.*dtP + beta*dPi;                               % iterative solution update
         
-        dP([1 end],:) = dP([end-1 2],:);                                   % periodic boundaries
-        dP(:,[1 end]) = dP(:,[end-1 2]);
+        dPi([1 end],:) = dPi([end-1 2],:);                                 % periodic boundaries
+        dPi(:,[1 end]) = dPi(:,[end-1 2]);
         
-        if demean; dP = dP-mean(dP(:)); end                                % remove mean from update
+        if demean; dPi = dPi-mean(dPi(:)); end                             % remove mean from update
             
-        P = Pi + alpha*dP + beta*dPi;                                      % update pressure solution
-
-        dPi = P - Pi;                                                      % store update step
+        P = P + dPi;                                                       % update pressure solution
 
         
         % check and report convergence every max(100,nup) iterations
         if ~mod(it,max(100,nup)); report; end
-        
+
         it = it+1;
 
     end
@@ -275,14 +270,10 @@ while time < tend && step <= M
     % update parameters and plot results
     if ~mod(step,nop); up2date; output; end
     
-    
     % increment time step
     time = time+dt;
     step = step+1;
     
 end
-
-% plot results
-up2date; output; 
 
 diary off

@@ -74,10 +74,10 @@ set(fh2, 'CurrentAxes', ax(3))
 imagesc(xc,zc,log10(eps(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ strain rate $\dot{\varepsilon}$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(4))
-imagesc(xc,zc,(eta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,log10(eta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ shear viscosity $\eta$'],TX{:},FS{:});
 set(fh2, 'CurrentAxes', ax(5))
-imagesc(xc,zc,(zeta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
+imagesc(xc,zc,log10(zeta(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
 set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['log$_{10}$ comp. viscosity $\zeta$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
 set(fh2, 'CurrentAxes', ax(6))
 imagesc(xc,zc,log10(tau(2:end-1,2:end-1))); axis ij equal tight; box on; cb = colorbar;
@@ -113,24 +113,29 @@ if plot_cv
         drawnow;
     else
         set(fh3, 'CurrentAxes', ax(1))
-        imagesc(xc,zc,(dW./(1e-16+norm(W(:)+WBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
+        imagesc(xc,zc,(dWi./(1e-16+norm(W(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
         set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix z-velocity $W$'],TX{:},FS{:}); set(gca,'XTickLabel',[]);
         set(fh3, 'CurrentAxes', ax(2))
-        imagesc(xc,zc,(dU./(1e-16+norm(U(:)+UBG(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
+        imagesc(xc,zc,(dUi./(1e-16+norm(U(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
         set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. matrix x-velocity $U$'],TX{:},FS{:}); set(gca,'XTickLabel',[]); set(gca,'YTickLabel',[]);
         set(fh3, 'CurrentAxes', ax(3))
-        imagesc(xc,zc,(dP./(1e-16+norm(P(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
+        imagesc(xc,zc,(dPi./(1e-16+norm(P(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
         set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. pore pressure $P$'],TX{:},FS{:});
         set(fh3, 'CurrentAxes', ax(4))
-        imagesc(xc,zc,(df./(1e-16+norm(f(:),2)       ./N))); axis ij equal tight; box on; cb = colorbar;
+        imagesc(xc,zc,(dfi./(1e-16+norm(f(:),2)./N))); axis ij equal tight; box on; cb = colorbar;
         set(cb,TL{:},TS{:}); set(gca,TL{:},TS{:}); title(['res. liquid fraction $\phi$'],TX{:},FS{:}); set(gca,'YTickLabel',[]);
         drawnow;
     end
     
     figure(4); clf;
-    p0 = linspace(-1,max(p(:)),1e3);
-    plot(p0,eps0.*ones(size(p0)),'k',p0,1+p0+bnchmrk*5,'r',yieldp(:),yieldt(:),'r.','LineWidth',2); axis equal tight; box on; hold on;
-    scatter(p(:),tau(:),20,(eta(:)),'filled'); colorbar; colormap(ocean);
+    p0 = linspace(-1.5,max(p(:))+0.5,1e3);
+    plot(p0,eps0.*ones(size(p0)),'k','LineWidth',2); axis equal tight; box on; hold on;
+    plot(p0,max(0,2+p0/2+bnchmrk*5),'b','LineWidth',2);
+    p0 = linspace(-1,max(p(:))+0.5,1e3);
+    plot(p0,max(0,1+p0  +bnchmrk*5),'r','LineWidth',2);
+    plot(pyt(:),tyt(:),'r.','LineWidth',2);
+    plot(p  (:),tys(:),'b.','LineWidth',2);
+    scatter(p(:),tau(:),20,(f(:)),'filled'); colorbar; colormap(ocean);
     xlabel('Effective pressure')
     ylabel('Stress magnitude')
     title('Failure Criterion');
@@ -144,8 +149,8 @@ if save_op
     name = ['../out/',runID,'/',runID,'_mat_',num2str(frame)];
     print(fh2,name,'-dpng','-r300');
     
-    clear fh1 fh2 fh3 ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN p0 dWi dWii dUi dUii dPi dPii
-    clear Wi Ui Pi dtWi dtUi dtPi dtWii dtUii dtPii fo Div_fVo Div_fVBGo Div_tz Div_tx dtW dtU dtP etac k kk
+    clear fh1 fh2 fh3 ax cb fw axw axh avs ahs axl axr axt axb fh fw TX TL FS TS UN p0
+    clear Wi Ui Pi fo Div_fVo Div_fVBGo Div_tz Div_tx dtW dtU dtP k kk Kx Kz etac
 
     name = ['../out/',runID,'/',runID,'_cont'];
     save([name,'.mat']);
