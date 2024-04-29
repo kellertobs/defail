@@ -58,7 +58,7 @@ epsp = eps - tau./ etav;
 upsp = ups +   p./zetav;
 
 % update segregation coefficients
-K    = f.^m + (epsp + upsp)/10;                                            % segregation coefficient
+K    = f.^m;                                                               % segregation coefficient
 
 Kx   = (K(:,1:end-1)+K(:,2:end)).*0.5;                                     % evaluate on cell faces
 Kz   = (K(1:end-1,:)+K(2:end,:)).*0.5;
